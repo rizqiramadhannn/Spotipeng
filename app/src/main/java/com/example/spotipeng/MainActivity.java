@@ -12,6 +12,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.animation.OvershootInterpolator;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -21,6 +22,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -28,12 +31,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import jp.wasabeef.recyclerview.adapters.ScaleInAnimationAdapter;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
 public class MainActivity extends AppCompatActivity {
+    private JsonPlaceHolderApi jsonPlaceHolderApi;
     RecyclerView recyclerView;
     SongAdapter songAdapter;
     List<Song> allSongs = new ArrayList<>();
     ActivityResultLauncher<String> storagePermissionLauncher;
-    final String permission = Manifest.permission.READ_EXTERNAL_STORAGE;
+    private boolean isMusicPlaying = false;
+    private MiniPlayerFragment miniPlayerFragment;
+    private String currentSongTitle;
+    private String currentSongArtist;
+
+    private Uri currentSongArtwork;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,101 +62,56 @@ public class MainActivity extends AppCompatActivity {
         Objects.requireNonNull(getSupportActionBar()).setTitle(getResources().getString(R.string.app_name));
 
         recyclerView = findViewById(R.id.recyclerview);
-        storagePermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted->{
-           if (granted) {
-               fetchSongs();
-           } else {
-               userResponses();
-           }
-        });
 
-        storagePermissionLauncher.launch(permission);
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://6152fa45c465200017d1a8e3.mockapi.io/api/v1/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        jsonPlaceHolderApi = retrofit.create(JsonPlaceHolderApi.class);
+
+        // Set up the MiniPlayerFragment
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        miniPlayerFragment = (MiniPlayerFragment) fragmentManager.findFragmentById(R.id.miniPlayerContainer);
+        fetchSongs();
     }
 
-    private void userResponses() {
-        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED){
-            fetchSongs();
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
-            if (shouldShowRequestPermissionRationale(permission)){
-                new AlertDialog.Builder(this)
-                        .setTitle("Requesting Permission")
-                        .setMessage("Allow us to fetch songs from your device")
-                        .setPositiveButton("Allow", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                storagePermissionLauncher.launch(permission);
-                            }
-                        })
-                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                Toast.makeText(getApplicationContext(), "Permission Denied", Toast.LENGTH_SHORT).show();
-                                dialogInterface.dismiss();
-                            }
-                        })
-                        .show();
-            }
-        } else {
-            Toast.makeText(this, "No Access to Device Storage", Toast.LENGTH_SHORT).show();
-        }
-    }
 
     private void fetchSongs() {
         List<Song> songs = new ArrayList<>();
-        List<Song> dummySongs = new ArrayList<>();
+        Call<List<Song>> call = jsonPlaceHolderApi.getSongs();
 
-        for (int i = 0; i < 20; i++) {
-            String title = "Song Title " + (i + 1);
-            Uri uri = Uri.parse("content://media/external/audio/media/" + (i + 1));
-            Uri albumArtworkUri = Uri.parse("content://media/external/audio/albumart/" + (i + 1));
-            int duration = (i + 1) * 180000; // Duration in milliseconds (assuming 3 minutes per song)
+        List<Song> finalSongs = songs;
+        call.enqueue(new Callback<List<Song>>() {
+            @Override
+            public void onResponse(Call<List<Song>> call, Response<List<Song>> response) {
+                if (!response.isSuccessful()){
+                    Log.i("Get Song", "Code: " + response.code());
+                    return;
+                }
 
-            Song song = new Song(title, uri, albumArtworkUri, duration);
-            dummySongs.add(song);
-        }
+                List<Song> jsonSong = response.body();
 
-        //dummy data
-        songs = dummySongs;
-        Uri mediaStoreUri;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
-            mediaStoreUri = MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL);
-        } else {
-            mediaStoreUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        }
+                for (Song song : jsonSong){
+                    new Song(
+                            song.getSinger(),
+                            song.getTitle(),
+                            song.getUrl(),
+                            song.getAlbum());
 
-        String[] projection = new String[]{
-                MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.DISPLAY_NAME,
-                MediaStore.Audio.Media.DURATION,
-                MediaStore.Audio.Media.ALBUM_ID,
-        };
-
-        String sortOrder = MediaStore.Audio.Media.DATE_ADDED;
-        try(Cursor cursor = getContentResolver().query(mediaStoreUri, projection, null, null, sortOrder)) {
-            int idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
-            int titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME);
-            int durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
-            int albumIdColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
-
-            while (cursor.moveToNext()){
-                long id = cursor.getLong(idColumn);
-                String title = cursor.getString(titleColumn);
-                int duration = cursor.getInt(durationColumn);
-                long albumId = cursor.getLong(albumIdColumn);
-
-                Uri uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
-
-                Uri albumArtworkUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId);
-
-                title = title.substring(0, title.lastIndexOf("."));
-
-                Song song = new Song(title, uri, albumArtworkUri, duration);
-                
-                songs.add(song);
+                    finalSongs.add(song);
+                }
+                showSongs(finalSongs);
+                Log.i("TAG", "onResponse: " + jsonSong.get(0).getTitle());
             }
 
-            showSongs(songs);
-        }
+            @Override
+            public void onFailure(Call<List<Song>> call, Throwable t) {
+                Log.i("Get Song", "Call failed " + t);
+            }
+        });
+
+        Log.i("Songs", "fetchSongs: " + finalSongs);
     }
 
     private void showSongs(List<Song> songs) {
@@ -157,15 +130,21 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(layoutManager);
         songAdapter = new SongAdapter(this, allSongs);
         recyclerView.setAdapter(songAdapter);
+
+        ScaleInAnimationAdapter scaleInAnimationAdapter = new ScaleInAnimationAdapter(songAdapter);
+        scaleInAnimationAdapter.setDuration(1000);
+        scaleInAnimationAdapter.setInterpolator(new OvershootInterpolator());
+        scaleInAnimationAdapter.setFirstOnly(false);
+        recyclerView.setAdapter(scaleInAnimationAdapter);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu){
         getMenuInflater().inflate(R.menu.search_btn, menu);
-        
+
         MenuItem menuItem = menu.findItem(R.id.searchBtn);
         SearchView searchView = (SearchView) menuItem.getActionView();
-        
+
         SearchSong(searchView);
         return super.onCreateOptionsMenu(menu);
     }
@@ -199,5 +178,89 @@ public class MainActivity extends AppCompatActivity {
                 songAdapter.filterSongs(filteredList);
             }
         }
+    }
+
+    public void onMusicPlaybackStarted(Song song) {
+        // Call startMusicPlayback() when music starts playing
+        startMusicPlayback(song);
+    }
+
+    public void onMusicPlaybackStopped() {
+        // Call stopMusicPlayback() when music stops playing
+        stopMusicPlayback();
+    }
+
+    private void startMusicPlayback(Song song) {
+        // Call this method when music starts playing
+        isMusicPlaying = true;
+        showMiniPlayerFragment();
+
+        if (miniPlayerFragment != null) {
+            miniPlayerFragment.updateSongTitle(song.getTitle());
+            miniPlayerFragment.updatePlayPauseButton(true);
+        }
+
+        // Set the current song title
+        currentSongTitle = song.getTitle();
+        currentSongArtwork = Uri.parse(song.getAlbum());
+        currentSongArtist = song.getSinger();
+
+        // Start playing the music in the SongAdapter
+        songAdapter.startMusic();
+    }
+
+    private void stopMusicPlayback() {
+        // Call this method when music stops playing
+        isMusicPlaying = false;
+        hideMiniPlayerFragment();
+
+        // Stop the music in the SongAdapter
+        songAdapter.stopMusic();
+    }
+
+    private void showMiniPlayerFragment() {
+        // Show the MiniPlayerFragment
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+
+        if (miniPlayerFragment == null) {
+            miniPlayerFragment = new MiniPlayerFragment();
+            transaction.add(R.id.miniPlayerContainer, miniPlayerFragment);
+        } else {
+            transaction.show(miniPlayerFragment);
+        }
+
+        transaction.commit();
+    }
+
+    private void hideMiniPlayerFragment() {
+        // Hide the MiniPlayerFragment
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+
+        if (miniPlayerFragment != null) {
+            transaction.hide(miniPlayerFragment);
+        }
+
+        transaction.commit();
+    }
+
+    public SongAdapter getSongAdapter() {
+        return songAdapter;
+    }
+
+    public String getCurrentSongTitle() {
+        return currentSongTitle;
+    }
+
+    public String getCurrentArtist() {
+        return currentSongArtist;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Stop the playback when the activity is destroyed
+        songAdapter.stopPlayback();
     }
 }

@@ -2,32 +2,31 @@ package com.example.spotipeng;
 
 import android.net.Uri;
 public class Song {
+    String singer;
     String title;
-    Uri uri;
-    Uri artworkUri;
-    int size;
-    int duration;
+    String url;
+    String album;
 
-    public Song(String title, Uri uri, Uri artworkUri, int duration) {
+    public Song(String singer, String title, String url, String album) {
         this.title = title;
-        this.uri = uri;
-        this.artworkUri = artworkUri;
-        this.duration = duration;
+        this.url = url;
+        this.album = album;
+    }
+
+    public String getSinger() {
+        return singer;
     }
 
     public String getTitle() {
         return title;
     }
 
-    public Uri getUri() {
-        return uri;
+    public String getUrl() {
+        return url;
     }
 
-    public Uri getArtworkUri() {
-        return artworkUri;
+    public String getAlbum() {
+        return album;
     }
 
-    public int getDuration() {
-        return duration;
-    }
 }
