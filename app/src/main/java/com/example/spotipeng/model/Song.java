@@ -1,6 +1,5 @@
-package com.example.spotipeng;
+package com.example.spotipeng.model;
 
-import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -9,6 +8,7 @@ public class Song implements Parcelable {
     String title;
     String url;
     String album;
+    private int duration;
 
     // Other constructors and methods
 
@@ -17,6 +17,14 @@ public class Song implements Parcelable {
         this.title = title;
         this.url = url;
         this.album = album;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
     }
 
     public String getSinger() {
@@ -40,6 +48,7 @@ public class Song implements Parcelable {
         title = in.readString();
         url = in.readString();
         album = in.readString();
+        duration = in.readInt();
     }
 
     public static final Creator<Song> CREATOR = new Creator<Song>() {
@@ -65,5 +74,6 @@ public class Song implements Parcelable {
         dest.writeString(title);
         dest.writeString(url);
         dest.writeString(album);
+        dest.writeInt(duration);
     }
 }

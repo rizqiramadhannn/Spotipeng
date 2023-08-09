@@ -1,8 +1,7 @@
-package com.example.spotipeng;
+package com.example.spotipeng.fragment;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,7 +15,18 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.bumptech.glide.Glide;
+import com.example.spotipeng.events.GetCurrentSongEvent;
+import com.example.spotipeng.service.MusicService;
+import com.example.spotipeng.R;
+import com.example.spotipeng.activity.SongDetailActivity;
+import com.example.spotipeng.events.MusicPlaybackPausedEvent;
+import com.example.spotipeng.events.MusicPlaybackResumedEvent;
+import com.example.spotipeng.events.MusicPlaybackStartedEvent;
+import com.example.spotipeng.events.MusicPlaybackStoppedEvent;
+import com.example.spotipeng.model.Song;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 public class MiniPlayerFragment extends Fragment {
 
@@ -25,7 +35,21 @@ public class MiniPlayerFragment extends Fragment {
     private ImageView artworkView;
     private ImageButton playPauseButton;
     private boolean isPlaying = false;
+    private Song currentSong;
 
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Register the fragment as an EventBus subscriber
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // Unregister the fragment from EventBus when it's destroyed
+        EventBus.getDefault().unregister(this);
+    }
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -36,65 +60,55 @@ public class MiniPlayerFragment extends Fragment {
 
         // Set click listener for the play/pause button
         playPauseButton.setOnClickListener(v -> {
+            Intent serviceIntent = new Intent(getContext(), MusicService.class);
             if (isPlaying) {
-                // Pause the music
-                pauseMusic();
+                serviceIntent.setAction("PAUSE");
             } else {
                 // Start playing the music
-                startMusic();
+                serviceIntent.setAction("RESUME");
             }
+            getContext().startService(serviceIntent);
         });
-
-        // Check if the song title is already set in the MainActivity and update it in the MiniPlayerFragment
-        String songTitle = ((MainActivity) requireActivity()).getCurrentSongTitle();
-        String artist = ((MainActivity) requireActivity()).getCurrentArtist();
-
-        if (songTitle != null) {
-            updateSongTitle(songTitle);
-        }
-        if (artist != null) {
-            updateArtist(artist);
-        }
         // Apply fade-in animation to the root view of the fragment
         Animation fadeInAnimation = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_in);
         rootView.startAnimation(fadeInAnimation);
 
         // Set click listener for the MiniPlayer to open the SongDetailActivity
         rootView.setOnClickListener(v -> {
-            Intent intent = new Intent(requireContext(), SongDetailActivity.class);
-            Song currentSong = ((MainActivity) requireActivity()).getCurrentPlayingSong();
-            Log.i("TAG", "onCreateView: " + currentSong.getTitle());
-            if (currentSong != null) {
-                intent.putExtra("song", currentSong);
-                startActivity(intent);
-            }
+            EventBus.getDefault().post(new GetCurrentSongEvent(currentSong));
         });
 
         return rootView;
     }
 
-    private void startMusic() {
-        // Implement the code to start playing the music
-        isPlaying = true;
-        // Update the play/pause button to show pause icon
-        updatePlayPauseButton(true);
-
-        // Start the music in the SongAdapter if available
-        if (((MainActivity) requireActivity()).getSongAdapter() != null) {
-            ((MainActivity) requireActivity()).getSongAdapter().startMusic();
-        }
+    @Subscribe
+    public void onMusicPlaybackPaused(MusicPlaybackPausedEvent event){
+        isPlaying = event.getStatus();
+        updatePlayPauseButton(isPlaying);
     }
 
-    private void pauseMusic() {
-        // Implement the code to pause the music
-        isPlaying = false;
-        // Update the play/pause button to show play icon
-        updatePlayPauseButton(false);
+    @Subscribe
+    public void onMusicPlaybackResumed(MusicPlaybackResumedEvent event){
+        isPlaying = event.getStatus();
+        updatePlayPauseButton(isPlaying);
+    }
 
-        // Pause the music in the SongAdapter
-        if (((MainActivity) requireActivity()).getSongAdapter() != null) {
-            ((MainActivity) requireActivity()).getSongAdapter().pauseMusic();
-        }
+    @Subscribe
+    public void onMusicPlaybackStarted(MusicPlaybackStartedEvent event) {
+        // Handle the event here
+        Song song = event.getSong();
+        updateSongTitle(song.getTitle());
+        updateArtist(song.getSinger());
+        isPlaying = event.getStatus();
+        updatePlayPauseButton(isPlaying);
+        currentSong = song;
+        // Other logic
+    }
+
+    @Subscribe
+    public void onMusicPlaybackStopped(MusicPlaybackStoppedEvent event) {
+        // Handle the event here
+        // Update UI or perform other actions
     }
 
     // Update the song title in the MiniPlayerFragment

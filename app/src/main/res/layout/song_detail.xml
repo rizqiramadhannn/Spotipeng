@@ -64,7 +64,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_loop_off"
-            android:background="?android:selectableItemBackground"
+            android:background="@android:color/transparent"
             android:layout_weight="1"
             android:scaleType="fitCenter" />
 
@@ -75,7 +75,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_previous"
-            android:background="?android:selectableItemBackground"
+            android:background="@android:color/transparent"
             android:layout_weight="1"
             android:scaleType="fitCenter" />
 
@@ -83,8 +83,8 @@
             android:id="@+id/playPauseButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_play"
-            android:background="?android:selectableItemBackground"
+            android:src="@drawable/ic_pause"
+            android:background="@android:color/transparent"
             android:layout_weight="1"
             android:scaleType="fitCenter" />
 
@@ -93,7 +93,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_next"
-            android:background="?android:selectableItemBackground"
+            android:background="@android:color/transparent"
             android:layout_weight="1"
             android:scaleType="fitCenter" />
 
@@ -102,7 +102,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_shuffle_off"
-            android:background="?android:selectableItemBackground"
+            android:background="@android:color/transparent"
             android:layout_weight="1"
             android:scaleType="fitCenter" />
 
