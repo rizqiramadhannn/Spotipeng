@@ -1,13 +1,13 @@
 package com.example.spotipeng;
 
-import android.net.Uri;
+import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.view.animation.OvershootInterpolator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -17,8 +17,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
-
-import jp.wasabeef.recyclerview.adapters.ScaleInAnimationAdapter;
 
 public class MiniPlayerFragment extends Fragment {
 
@@ -34,7 +32,6 @@ public class MiniPlayerFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_mini_player, container, false);
         songTitleTextView = rootView.findViewById(R.id.titleView);
         artistTextView = rootView.findViewById(R.id.artistView);
-        artworkView = rootView.findViewById(R.id.artworkView);
         playPauseButton = rootView.findViewById(R.id.playPauseButton);
 
         // Set click listener for the play/pause button
@@ -61,6 +58,17 @@ public class MiniPlayerFragment extends Fragment {
         // Apply fade-in animation to the root view of the fragment
         Animation fadeInAnimation = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_in);
         rootView.startAnimation(fadeInAnimation);
+
+        // Set click listener for the MiniPlayer to open the SongDetailActivity
+        rootView.setOnClickListener(v -> {
+            Intent intent = new Intent(requireContext(), SongDetailActivity.class);
+            Song currentSong = ((MainActivity) requireActivity()).getCurrentPlayingSong();
+            Log.i("TAG", "onCreateView: " + currentSong.getTitle());
+            if (currentSong != null) {
+                intent.putExtra("song", currentSong);
+                startActivity(intent);
+            }
+        });
 
         return rootView;
     }
@@ -89,7 +97,6 @@ public class MiniPlayerFragment extends Fragment {
         }
     }
 
-
     // Update the song title in the MiniPlayerFragment
     public void updateSongTitle(String songTitle) {
         if (songTitleTextView != null) {
@@ -114,4 +121,3 @@ public class MiniPlayerFragment extends Fragment {
         }
     }
 }
-

@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.animation.OvershootInterpolator;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -21,11 +22,14 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private JsonPlaceHolderApi jsonPlaceHolderApi;
     RecyclerView recyclerView;
     SongAdapter songAdapter;
+    private Song currentPlayingSong;
     List<Song> allSongs = new ArrayList<>();
     ActivityResultLauncher<String> storagePermissionLauncher;
     private boolean isMusicPlaying = false;
@@ -50,8 +55,6 @@ public class MainActivity extends AppCompatActivity {
     private String currentSongArtist;
 
     private Uri currentSongArtwork;
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -204,6 +207,7 @@ public class MainActivity extends AppCompatActivity {
         currentSongTitle = song.getTitle();
         currentSongArtwork = Uri.parse(song.getAlbum());
         currentSongArtist = song.getSinger();
+        setCurrentPlayingSong(song);
 
         // Start playing the music in the SongAdapter
         songAdapter.startMusic();
@@ -255,6 +259,14 @@ public class MainActivity extends AppCompatActivity {
 
     public String getCurrentArtist() {
         return currentSongArtist;
+    }
+
+    public Song getCurrentPlayingSong() {
+        return currentPlayingSong;
+    }
+
+    public void setCurrentPlayingSong(Song song) {
+        currentPlayingSong = song;
     }
 
     @Override
