@@ -6,60 +6,97 @@
     android:id="@+id/notification_layout"
     android:orientation="vertical">
 
+    <!-- Song title TextView -->
     <TextView
         android:id="@+id/notification_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Song Title"
-        android:textSize="14dp"
-        android:textColor="@color/black"
+        android:textSize="14sp"
+        android:textColor="@android:color/black"
         android:paddingHorizontal="8dp"
         android:paddingTop="8dp"/>
 
+    <!-- Play/Pause, Previous, Next buttons -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
+        android:layout_height="60dp"
         android:layout_gravity="center_vertical"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
         android:paddingTop="@dimen/sm"
         android:paddingRight="8dp"
         android:paddingBottom="8dp">
 
         <ImageButton
-            android:layout_marginTop="@dimen/x_sm"
-            android:background="@android:color/transparent"
             android:id="@+id/notification_previous"
             android:layout_width="@dimen/lg"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_previous_black"/>
+            android:layout_marginTop="@dimen/x_sm"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_previous_black" />
 
         <ImageButton
-            android:layout_marginTop="@dimen/x_sm"
             android:id="@+id/notification_play_pause"
-            android:background="@android:color/transparent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_pause_black"/>
+            android:layout_marginTop="@dimen/x_sm"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_pause_black" />
 
         <ImageButton
-            android:layout_marginTop="@dimen/x_sm"
             android:id="@+id/notification_next"
-            android:background="@android:color/transparent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_next_black"/>
+            android:layout_marginTop="@dimen/x_sm"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_next_black" />
 
-
-
-        <ProgressBar
-            android:id="@+id/notification_progress_bar"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"/>
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
+            <ProgressBar
+                android:id="@+id/notification_progress_bar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginHorizontal="@dimen/sm"
+                android:layout_weight="2">
+
+                <TextView
+                    android:id="@+id/notification_elapsed_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:text="0:00"
+                    android:textColor="@android:color/black"
+                    android:textSize="12sp" />
+
+                <!-- Remaining time TextView -->
+                <TextView
+                    android:id="@+id/notification_remaining_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="0:00"
+                    android:textColor="@android:color/black"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
+
+    <!-- Progress bar -->
+
+
 
 </LinearLayout>

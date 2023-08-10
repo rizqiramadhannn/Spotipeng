@@ -1,11 +1,13 @@
 package com.example.spotipeng.service;
 
+import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Binder;
@@ -14,12 +16,13 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.ImageButton;
-import android.widget.ProgressBar;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import com.example.spotipeng.R;
 import com.example.spotipeng.activity.SongDetailActivity;
@@ -33,6 +36,7 @@ import com.example.spotipeng.events.MusicPlaybackStoppedEvent;
 import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
 import com.example.spotipeng.events.UpdatePlaybackSeekbarPositionEvent;
 import com.example.spotipeng.model.Song;
+
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -85,7 +89,7 @@ public class MusicService extends Service {
     }
 
     @Subscribe
-    public void onGetSongList(GetSongListEvent event){
+    public void onGetSongList(GetSongListEvent event) {
         songs = event.getSongs();
     }
 
@@ -128,22 +132,22 @@ public class MusicService extends Service {
     }
 
     @Subscribe
-    public void onUpdateSeekbarPosition(UpdatePlaybackSeekbarPositionEvent event){
+    public void onUpdateSeekbarPosition(UpdatePlaybackSeekbarPositionEvent event) {
         mediaPlayer.seekTo(event.getCurrentPosition());
     }
 
     @Subscribe
-    public void onMusicPlaybackLoop(MusicPlaybackLoopEvent event){
+    public void onMusicPlaybackLoop(MusicPlaybackLoopEvent event) {
         loopStatus = event.getStatus();
     }
 
     @Subscribe
-    public void onMusicPlaybackResumedEvent(MusicPlaybackResumedEvent event){
+    public void onMusicPlaybackResumedEvent(MusicPlaybackResumedEvent event) {
         showNotification(currentSong);
     }
 
     @Subscribe
-    public void onMusicPlaybackPausedEvent(MusicPlaybackPausedEvent event){
+    public void onMusicPlaybackPausedEvent(MusicPlaybackPausedEvent event) {
         showNotification(currentSong);
     }
 
@@ -151,7 +155,7 @@ public class MusicService extends Service {
         if (songs.isEmpty()) {
             return; // No songs in the playlist
         }
-        if (currentSongIndex == songs.size()-1 && loopStatus == 0){
+        if (currentSongIndex == songs.size() - 1 && loopStatus == 0) {
             Toast.makeText(this, "This is the end of Playlist", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -164,7 +168,7 @@ public class MusicService extends Service {
         if (songs.isEmpty()) {
             return; // No songs in the playlist
         }
-        if (currentSongIndex == 0 && loopStatus == 0){
+        if (currentSongIndex == 0 && loopStatus == 0) {
             Toast.makeText(this, "This is the beginning of Playlist", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -192,7 +196,7 @@ public class MusicService extends Service {
                     public void onCompletion(MediaPlayer mp) {
                         // Playback completed, play the next song
 
-                        if (loopStatus == 0 && currentSongIndex == songs.size()-1){
+                        if (loopStatus == 0 && currentSongIndex == songs.size() - 1) {
                             EventBus.getDefault().post(new MusicPlaybackStoppedEvent());
                         } else {
                             playNextSong();
@@ -250,7 +254,8 @@ public class MusicService extends Service {
 
     private void showNotification(Song song) {
         String playResumeAction = "PAUSE";
-        if (!isPlaying){
+        // Create PendingIntent for notification buttons
+        if (!isPlaying) {
             playResumeAction = "RESUME";
         }
         PendingIntent pendingPlayIntent = PendingIntent.getService(this, 0, new Intent(this, MusicService.class).setAction(playResumeAction), PendingIntent.FLAG_IMMUTABLE);
@@ -258,42 +263,76 @@ public class MusicService extends Service {
         PendingIntent pendingPrevIntent = PendingIntent.getService(this, 0, new Intent(this, MusicService.class).setAction("PREVIOUS"), PendingIntent.FLAG_IMMUTABLE);
         Intent detailIntent = new Intent(this, SongDetailActivity.class);
         detailIntent.putExtra("song", song);
-        PendingIntent pendingDetailIntent = PendingIntent.getActivity(this, 0, detailIntent, PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pendingDetailIntent = PendingIntent.getActivity(this, 0, detailIntent, PendingIntent.FLAG_MUTABLE);
 
+        // Set up custom notification views
         RemoteViews remoteViews = new RemoteViews(getPackageName(), R.layout.notification_layout_expanded);
-        if (!isPlaying) {
-            remoteViews.setImageViewResource(R.id.notification_play_pause, R.drawable.ic_play_black);
-        }
-        remoteViews.setOnClickPendingIntent(R.id.notification_layout, pendingDetailIntent);
+        RemoteViews collapsedView = new RemoteViews(getPackageName(), R.layout.notification_layout);
+
+        // Set the song title and artist in both collapsed and expanded views
+        collapsedView.setTextViewText(R.id.notification_title, song.getTitle() + " - " + song.getSinger());
         remoteViews.setTextViewText(R.id.notification_title, song.getTitle() + " - " + song.getSinger());
+
+        // Set the play/pause action based on the playback state
+        remoteViews.setImageViewResource(R.id.notification_play_pause, isPlaying ? R.drawable.ic_pause_black : R.drawable.ic_play_black);
         remoteViews.setOnClickPendingIntent(R.id.notification_play_pause, pendingPlayIntent);
+
+        // Set the next and previous actions
         remoteViews.setOnClickPendingIntent(R.id.notification_previous, pendingPrevIntent);
         remoteViews.setOnClickPendingIntent(R.id.notification_next, pendingNextIntent);
 
-// Calculate and set up the progress bar
-        ProgressBar progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        int playbackProgress = calculatePlaybackProgress();
-        progressBar.setMax(100); // Set the maximum value for progress
-        progressBar.setProgress(playbackProgress); // Set the current progress
-        remoteViews.setProgressBar(R.id.notification_progress_bar, 100, playbackProgress, false);
-
-        RemoteViews collapsedView = new RemoteViews(getPackageName(), R.layout.notification_layout);
-        collapsedView.setTextViewText(R.id.notification_title, song.getTitle() + " - " + song.getSinger());
-
+        // Set up the progress bar
+        remoteViews.setProgressBar(R.id.notification_progress_bar, song.getDuration(), 0, false);
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomContentView(collapsedView)
                 .setCustomBigContentView(remoteViews)
                 .setSmallIcon(R.drawable.spotipeng_logo_only)
+                .setContentIntent(pendingDetailIntent) // Set the detail intent when user taps the notification
                 .build();
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                    int currentPosition = mediaPlayer.getCurrentPosition();
+                    int playbackProgress = calculatePlaybackProgress(currentPosition);
+                    remoteViews.setProgressBar(R.id.notification_progress_bar, song.getDuration(), playbackProgress, false);
 
+                    // Update elapsed time and remaining time TextViews
+                    remoteViews.setTextViewText(R.id.notification_elapsed_time, formatDuration(currentPosition));
+                    remoteViews.setTextViewText(R.id.notification_remaining_time, formatDuration(song.getDuration() - currentPosition));
+
+                    // Update the notification
+                    NotificationManagerCompat notificationManager = NotificationManagerCompat.from(MusicService.this);
+                    if (ActivityCompat.checkSelfPermission(MusicService.this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                        // TODO: Consider calling
+                        //    ActivityCompat#requestPermissions
+                        // here to request the missing permissions, and then overriding
+                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                        //                                          int[] grantResults)
+                        // to handle the case where the user grants the permission. See the documentation
+                        // for ActivityCompat#requestPermissions for more details.
+                        return;
+                    }
+                    notificationManager.notify(NOTIFICATION_ID, notification);
+
+                    // Schedule the next update after a short delay (e.g., 1 second)
+                    handler.postDelayed(this, 1000); // Update every 1 second
+                }
+            }
+        });
+        // Create a notification with custom views
+
+
+        // Start the service in the foreground with the custom notification
         startForeground(NOTIFICATION_ID, notification);
 
+        // Set up the handler for updating progress and time TextViews
+        // Start the progress bar update every 1 second
     }
 
-    private int calculatePlaybackProgress() {
+    private int calculatePlaybackProgress(int currentPosition) {
         if (mediaPlayer != null) {
-            int currentPosition = mediaPlayer.getCurrentPosition();
             int totalDuration = mediaPlayer.getDuration();
 
             // Calculate the playback progress in percentage
@@ -321,6 +360,13 @@ public class MusicService extends Service {
         MusicService getService() {
             return MusicService.this;
         }
+    }
+
+    private String formatDuration(int duration) {
+        int seconds = duration / 1000;
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 
 

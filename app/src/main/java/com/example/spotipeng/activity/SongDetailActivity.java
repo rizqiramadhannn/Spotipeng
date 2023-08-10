@@ -129,7 +129,7 @@ public class SongDetailActivity extends AppCompatActivity {
     @Subscribe
     public void onMusicPlaybackStartedEvent(MusicPlaybackStartedEvent event) {
         Song song = event.getSong();
-
+        rightduration = song.getDuration();
         // Update views with song data
         titleTextView.setText(song.getTitle());
         artistTextView.setText(song.getSinger());

@@ -25,6 +25,7 @@ import com.example.spotipeng.events.GetCurrentSongEvent;
 import com.example.spotipeng.events.GetSongListEvent;
 import com.example.spotipeng.events.MusicPlaybackStartedEvent;
 import com.example.spotipeng.events.StartFragmentEvent;
+import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
 import com.example.spotipeng.fragment.MiniPlayerFragment;
 import com.example.spotipeng.model.Song;
 import com.example.spotipeng.service.MusicService;
@@ -55,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
     private String currentSongTitle;
     private String currentSongArtist;
     List<Song> songs = new ArrayList<>();
-
     private Uri currentSongArtwork;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,6 +134,10 @@ public class MainActivity extends AppCompatActivity {
         scaleInAnimationAdapter.setInterpolator(new OvershootInterpolator());
         scaleInAnimationAdapter.setFirstOnly(false);
         recyclerView.setAdapter(scaleInAnimationAdapter);
+    }
+
+    public void onUpdatePlaybackPosition(UpdatePlaybackPositionEvent event) {
+        showMiniPlayerFragment();
     }
 
     @Override
