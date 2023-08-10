@@ -64,13 +64,13 @@ public class SongDetailActivity extends AppCompatActivity {
 
         // Set click listeners for control buttons
         loopButton.setOnClickListener(v -> {
-                    if (loopStatus == 1){
-                        loopStatus = 0;
-                    } else {
-                        loopStatus = 1;
-                    }
-                    EventBus.getDefault().post(new MusicPlaybackLoopEvent(loopStatus));
-                });
+            if (loopStatus == 1){
+                loopStatus = 0;
+            } else {
+                loopStatus = 1;
+            }
+            EventBus.getDefault().post(new MusicPlaybackLoopEvent(loopStatus));
+        });
 
         shuffleButton.setOnClickListener(v -> toggleShuffling());
         nextButton.setOnClickListener(v -> playNextSong());

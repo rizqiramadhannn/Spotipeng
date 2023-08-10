@@ -13,12 +13,16 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.ImageButton;
+import android.widget.ProgressBar;
+import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
 import com.example.spotipeng.R;
+import com.example.spotipeng.activity.SongDetailActivity;
 import com.example.spotipeng.api.JsonPlaceHolderApi;
 import com.example.spotipeng.events.GetSongListEvent;
 import com.example.spotipeng.events.MusicPlaybackLoopEvent;
@@ -116,10 +120,11 @@ public class MusicService extends Service {
         return START_NOT_STICKY;
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
+    @Subscribe
     public void onMusicPlaybackStartedEvent(MusicPlaybackStartedEvent event) {
-
+        int duration = mediaPlayer.getDuration();
         currentSong = event.getSong();
+        currentSong.setDuration(duration);
     }
 
     @Subscribe
@@ -130,6 +135,16 @@ public class MusicService extends Service {
     @Subscribe
     public void onMusicPlaybackLoop(MusicPlaybackLoopEvent event){
         loopStatus = event.getStatus();
+    }
+
+    @Subscribe
+    public void onMusicPlaybackResumedEvent(MusicPlaybackResumedEvent event){
+        showNotification(currentSong);
+    }
+
+    @Subscribe
+    public void onMusicPlaybackPausedEvent(MusicPlaybackPausedEvent event){
+        showNotification(currentSong);
     }
 
     private void playNextSong() {
@@ -159,7 +174,8 @@ public class MusicService extends Service {
     }
 
     private void playSong(Song song) {
-        showNotification(currentSong.getTitle(), currentSong.getSinger());
+        isPlaying = true;
+
         if (mediaPlayer != null) {
             mediaPlayer.reset();
             try {
@@ -167,9 +183,9 @@ public class MusicService extends Service {
                 mediaPlayer.prepare();
                 int duration = mediaPlayer.getDuration();
                 song.setDuration(duration);
+                showNotification(song);
                 mediaPlayer.start();
                 currentSongIndex = songs.indexOf(song);
-                isPlaying = true;
                 EventBus.getDefault().post(new MusicPlaybackStartedEvent(currentSong));
                 mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                     @Override
@@ -203,12 +219,14 @@ public class MusicService extends Service {
 
     private void pause() {
         mediaPlayer.pause();
+        isPlaying = false;
         handler.removeCallbacksAndMessages(null);
         EventBus.getDefault().post(new MusicPlaybackPausedEvent());
     }
 
     private void resume() {
         mediaPlayer.start();
+        isPlaying = true;
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -230,29 +248,64 @@ public class MusicService extends Service {
         }
     }
 
-    private void showNotification(String title, String artist) {
-        String playResumeTV = "Play";
-        String playResumeAction = "PLAY";
-        // Create PendingIntent for notification buttons
-        if (isPlaying){
-            playResumeTV = "Resume";
+    private void showNotification(Song song) {
+        String playResumeAction = "PAUSE";
+        if (!isPlaying){
             playResumeAction = "RESUME";
         }
         PendingIntent pendingPlayIntent = PendingIntent.getService(this, 0, new Intent(this, MusicService.class).setAction(playResumeAction), PendingIntent.FLAG_IMMUTABLE);
-        PendingIntent pendingPauseIntent = PendingIntent.getService(this, 0, new Intent(this, MusicService.class).setAction("PAUSE"), PendingIntent.FLAG_IMMUTABLE);
-        PendingIntent pendingStopIntent = PendingIntent.getService(this, 0, new Intent(this, MusicService.class).setAction("STOP"), PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pendingNextIntent = PendingIntent.getService(this, 0, new Intent(this, MusicService.class).setAction("NEXT"), PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pendingPrevIntent = PendingIntent.getService(this, 0, new Intent(this, MusicService.class).setAction("PREVIOUS"), PendingIntent.FLAG_IMMUTABLE);
+        Intent detailIntent = new Intent(this, SongDetailActivity.class);
+        detailIntent.putExtra("song", song);
+        PendingIntent pendingDetailIntent = PendingIntent.getActivity(this, 0, detailIntent, PendingIntent.FLAG_IMMUTABLE);
+
+        RemoteViews remoteViews = new RemoteViews(getPackageName(), R.layout.notification_layout_expanded);
+        if (!isPlaying) {
+            remoteViews.setImageViewResource(R.id.notification_play_pause, R.drawable.ic_play_black);
+        }
+        remoteViews.setOnClickPendingIntent(R.id.notification_layout, pendingDetailIntent);
+        remoteViews.setTextViewText(R.id.notification_title, song.getTitle() + " - " + song.getSinger());
+        remoteViews.setOnClickPendingIntent(R.id.notification_play_pause, pendingPlayIntent);
+        remoteViews.setOnClickPendingIntent(R.id.notification_previous, pendingPrevIntent);
+        remoteViews.setOnClickPendingIntent(R.id.notification_next, pendingNextIntent);
+
+// Calculate and set up the progress bar
+        ProgressBar progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        int playbackProgress = calculatePlaybackProgress();
+        progressBar.setMax(100); // Set the maximum value for progress
+        progressBar.setProgress(playbackProgress); // Set the current progress
+        remoteViews.setProgressBar(R.id.notification_progress_bar, 100, playbackProgress, false);
+
+        RemoteViews collapsedView = new RemoteViews(getPackageName(), R.layout.notification_layout);
+        collapsedView.setTextViewText(R.id.notification_title, song.getTitle() + " - " + song.getSinger());
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle(title)
-                .setContentText(artist)
-                .setSmallIcon(R.drawable.ic_default_artwork)
-                .addAction(R.drawable.ic_pause, "Pause", pendingPauseIntent)
-                .addAction(R.drawable.ic_play, playResumeTV, pendingPlayIntent)
-                .addAction(R.drawable.ic_pause, "Stop", pendingStopIntent)
+                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
+                .setCustomContentView(collapsedView)
+                .setCustomBigContentView(remoteViews)
+                .setSmallIcon(R.drawable.spotipeng_logo_only)
                 .build();
 
         startForeground(NOTIFICATION_ID, notification);
+
     }
+
+    private int calculatePlaybackProgress() {
+        if (mediaPlayer != null) {
+            int currentPosition = mediaPlayer.getCurrentPosition();
+            int totalDuration = mediaPlayer.getDuration();
+
+            // Calculate the playback progress in percentage
+            double progressPercentage = (currentPosition * 100.0) / totalDuration;
+
+            // Ensure the progress is within the valid range (0 to 100)
+            return (int) Math.min(100, Math.max(0, progressPercentage));
+        }
+
+        return 0; // Return 0 if mediaPlayer is not available
+    }
+
 
     @Override
     public void onDestroy() {
