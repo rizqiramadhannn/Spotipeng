@@ -136,6 +136,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(scaleInAnimationAdapter);
     }
 
+    @Subscribe
     public void onUpdatePlaybackPosition(UpdatePlaybackPositionEvent event) {
         showMiniPlayerFragment();
     }
@@ -209,7 +210,6 @@ public class MainActivity extends AppCompatActivity {
 
         transaction.commit();
     }
-
     private void hideMiniPlayerFragment() {
         // Hide the MiniPlayerFragment
         FragmentManager fragmentManager = getSupportFragmentManager();

@@ -203,13 +203,13 @@ public class MusicService extends Service {
                         }
                     }
                 });
-                EventBus.getDefault().post(new UpdatePlaybackPositionEvent(isPlaying, mediaPlayer.getCurrentPosition()));
+                EventBus.getDefault().post(new UpdatePlaybackPositionEvent(song, isPlaying, mediaPlayer.getCurrentPosition()));
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                             int currentPosition = mediaPlayer.getCurrentPosition();
-                            EventBus.getDefault().post(new UpdatePlaybackPositionEvent(true, currentPosition));
+                            EventBus.getDefault().post(new UpdatePlaybackPositionEvent(song,true, currentPosition));
                             handler.postDelayed(this, 1000); // Update every 1 second
                         }
                     }
@@ -236,7 +236,7 @@ public class MusicService extends Service {
             public void run() {
                 if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                     int currentPosition = mediaPlayer.getCurrentPosition();
-                    EventBus.getDefault().post(new UpdatePlaybackPositionEvent(true, currentPosition));
+                    EventBus.getDefault().post(new UpdatePlaybackPositionEvent(currentSong,true, currentPosition));
                     handler.postDelayed(this, 1000); // Update every 1 second
                 }
             }

@@ -16,6 +16,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.spotipeng.events.GetCurrentSongEvent;
+import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
 import com.example.spotipeng.service.MusicService;
 import com.example.spotipeng.R;
 import com.example.spotipeng.activity.SongDetailActivity;
@@ -101,6 +102,16 @@ public class MiniPlayerFragment extends Fragment {
         updateArtist(song.getSinger());
         isPlaying = event.getStatus();
         updatePlayPauseButton(isPlaying);
+        currentSong = song;
+        // Other logic
+    }
+
+    @Subscribe
+    public void onUpdatePlaybackPosition(UpdatePlaybackPositionEvent event) {
+        // Handle the event here
+        Song song = event.getSong();
+        updateSongTitle(song.getTitle());
+        updateArtist(song.getSinger());
         currentSong = song;
         // Other logic
     }
