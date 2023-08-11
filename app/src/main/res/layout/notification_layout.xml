@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/notification_layout"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/notification_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Song Title"
+        android:textSize="14dp"
+        android:textColor="@color/black"
+        android:padding="8dp"/>
+
+
+
+<!--        <ProgressBar-->
+<!--            android:id="@+id/notification_seekbar"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:background="@color/black"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:max="100"-->
+<!--            android:progress="0"-->
+<!--            android:layout_marginTop="8dp"-->
+<!--            android:paddingStart="8dp"-->
+<!--            android:paddingEnd="8dp"/>-->
+
+</LinearLayout>

@@ -1,14 +1,8 @@
-package com.example.spotipeng;
+package com.example.spotipeng.activity;
 
-import android.Manifest;
-import android.content.ContentUris;
-import android.content.DialogInterface;
-import android.content.pm.PackageManager;
-import android.database.Cursor;
+import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,16 +10,28 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.spotipeng.R;
+import com.example.spotipeng.SongAdapter;
+import com.example.spotipeng.api.JsonPlaceHolderApi;
+import com.example.spotipeng.events.GetCurrentSongEvent;
+import com.example.spotipeng.events.GetSongListEvent;
+import com.example.spotipeng.events.MusicPlaybackStartedEvent;
+import com.example.spotipeng.events.StartFragmentEvent;
+import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
+import com.example.spotipeng.fragment.MiniPlayerFragment;
+import com.example.spotipeng.model.Song;
+import com.example.spotipeng.service.MusicService;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,19 +48,26 @@ public class MainActivity extends AppCompatActivity {
     private JsonPlaceHolderApi jsonPlaceHolderApi;
     RecyclerView recyclerView;
     SongAdapter songAdapter;
+    private Song currentPlayingSong;
     List<Song> allSongs = new ArrayList<>();
     ActivityResultLauncher<String> storagePermissionLauncher;
     private boolean isMusicPlaying = false;
     private MiniPlayerFragment miniPlayerFragment;
     private String currentSongTitle;
     private String currentSongArtist;
-
+    List<Song> songs = new ArrayList<>();
     private Uri currentSongArtwork;
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EventBus.getDefault().register(this);
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://64c1e509fa35860baea0ed02.mockapi.io/androidcourse/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        jsonPlaceHolderApi = retrofit.create(JsonPlaceHolderApi.class);
+        fetchSongs();
         setContentView(R.layout.activity_main);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -62,26 +75,15 @@ public class MainActivity extends AppCompatActivity {
         Objects.requireNonNull(getSupportActionBar()).setTitle(getResources().getString(R.string.app_name));
 
         recyclerView = findViewById(R.id.recyclerview);
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://6152fa45c465200017d1a8e3.mockapi.io/api/v1/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        jsonPlaceHolderApi = retrofit.create(JsonPlaceHolderApi.class);
-
-        // Set up the MiniPlayerFragment
         FragmentManager fragmentManager = getSupportFragmentManager();
         miniPlayerFragment = (MiniPlayerFragment) fragmentManager.findFragmentById(R.id.miniPlayerContainer);
-        fetchSongs();
+        Intent serviceIntent = new Intent(this, MusicService.class);
+        this.startService(serviceIntent);
     }
 
-
     private void fetchSongs() {
-        List<Song> songs = new ArrayList<>();
-        Call<List<Song>> call = jsonPlaceHolderApi.getSongs();
 
-        List<Song> finalSongs = songs;
+        Call<List<Song>> call = jsonPlaceHolderApi.getSongs();
         call.enqueue(new Callback<List<Song>>() {
             @Override
             public void onResponse(Call<List<Song>> call, Response<List<Song>> response) {
@@ -99,10 +101,10 @@ public class MainActivity extends AppCompatActivity {
                             song.getUrl(),
                             song.getAlbum());
 
-                    finalSongs.add(song);
+                    songs.add(song);
                 }
-                showSongs(finalSongs);
-                Log.i("TAG", "onResponse: " + jsonSong.get(0).getTitle());
+                showSongs();
+                EventBus.getDefault().post(new GetSongListEvent(songs));
             }
 
             @Override
@@ -110,12 +112,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("Get Song", "Call failed " + t);
             }
         });
-
-        Log.i("Songs", "fetchSongs: " + finalSongs);
     }
-
-    private void showSongs(List<Song> songs) {
-        Log.i("TAG", "fetchSongs: " + songs);
+    public void showSongs() {
         if (songs.size() == 0){
             Toast.makeText(this, "No Songs", Toast.LENGTH_SHORT).show();
             return;
@@ -136,6 +134,11 @@ public class MainActivity extends AppCompatActivity {
         scaleInAnimationAdapter.setInterpolator(new OvershootInterpolator());
         scaleInAnimationAdapter.setFirstOnly(false);
         recyclerView.setAdapter(scaleInAnimationAdapter);
+    }
+
+    @Subscribe
+    public void onUpdatePlaybackPosition(UpdatePlaybackPositionEvent event) {
+        showMiniPlayerFragment();
     }
 
     @Override
@@ -179,43 +182,18 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-    public void onMusicPlaybackStarted(Song song) {
+    @Subscribe
+    public void onStartFragment(StartFragmentEvent event) {
         // Call startMusicPlayback() when music starts playing
-        startMusicPlayback(song);
-    }
-
-    public void onMusicPlaybackStopped() {
-        // Call stopMusicPlayback() when music stops playing
-        stopMusicPlayback();
-    }
-
-    private void startMusicPlayback(Song song) {
-        // Call this method when music starts playing
-        isMusicPlaying = true;
         showMiniPlayerFragment();
-
-        if (miniPlayerFragment != null) {
-            miniPlayerFragment.updateSongTitle(song.getTitle());
-            miniPlayerFragment.updatePlayPauseButton(true);
-        }
-
-        // Set the current song title
-        currentSongTitle = song.getTitle();
-        currentSongArtwork = Uri.parse(song.getAlbum());
-        currentSongArtist = song.getSinger();
-
-        // Start playing the music in the SongAdapter
-        songAdapter.startMusic();
     }
 
-    private void stopMusicPlayback() {
-        // Call this method when music stops playing
-        isMusicPlaying = false;
-        hideMiniPlayerFragment();
-
-        // Stop the music in the SongAdapter
-        songAdapter.stopMusic();
+    @Subscribe
+    public void onCurrentSongEvent(GetCurrentSongEvent event) {
+        Song currentSong = event.getSong();
+        Intent intent = new Intent(this, SongDetailActivity.class);
+        intent.putExtra("song", currentSong); // Pass the currentSong to the SongDetailActivity
+        startActivity(intent);
     }
 
     private void showMiniPlayerFragment() {
@@ -232,7 +210,6 @@ public class MainActivity extends AppCompatActivity {
 
         transaction.commit();
     }
-
     private void hideMiniPlayerFragment() {
         // Hide the MiniPlayerFragment
         FragmentManager fragmentManager = getSupportFragmentManager();
@@ -244,23 +221,8 @@ public class MainActivity extends AppCompatActivity {
 
         transaction.commit();
     }
-
-    public SongAdapter getSongAdapter() {
-        return songAdapter;
-    }
-
-    public String getCurrentSongTitle() {
-        return currentSongTitle;
-    }
-
-    public String getCurrentArtist() {
-        return currentSongArtist;
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Stop the playback when the activity is destroyed
-        songAdapter.stopPlayback();
     }
 }
