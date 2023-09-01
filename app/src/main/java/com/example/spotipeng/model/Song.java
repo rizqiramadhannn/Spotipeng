@@ -4,51 +4,53 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class Song implements Parcelable {
-    String singer;
-    String title;
-    String url;
-    String album;
-    private int duration;
+    String Singer;
+    String Title;
+    String URL;
+    String Album;
+    private int Duration;
 
     // Other constructors and methods
 
-    public Song(String singer, String title, String url, String album) {
-        this.singer = singer;
-        this.title = title;
-        this.url = url;
-        this.album = album;
+    public Song(String Singer, String Title, String URL, String Album) {
+        this.Singer = Singer;
+        this.Title = Title;
+        this.URL = URL;
+        this.Album = Album;
     }
+
+
 
     public int getDuration() {
-        return duration;
+        return Duration;
     }
 
-    public void setDuration(int duration) {
-        this.duration = duration;
+    public void setDuration(int Duration) {
+        this.Duration = Duration;
     }
 
     public String getSinger() {
-        return singer;
+        return Singer;
     }
 
     public String getTitle() {
-        return title;
+        return Title;
     }
 
     public String getUrl() {
-        return url;
+        return URL;
     }
 
     public String getAlbum() {
-        return album;
+        return Album;
     }
 
     protected Song(Parcel in) {
-        singer = in.readString();
-        title = in.readString();
-        url = in.readString();
-        album = in.readString();
-        duration = in.readInt();
+        Singer = in.readString();
+        Title = in.readString();
+        URL = in.readString();
+        Album = in.readString();
+        Duration = in.readInt();
     }
 
     public static final Creator<Song> CREATOR = new Creator<Song>() {
@@ -70,10 +72,10 @@ public class Song implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(singer);
-        dest.writeString(title);
-        dest.writeString(url);
-        dest.writeString(album);
-        dest.writeInt(duration);
+        dest.writeString(Singer);
+        dest.writeString(Title);
+        dest.writeString(URL);
+        dest.writeString(Album);
+        dest.writeInt(Duration);
     }
 }

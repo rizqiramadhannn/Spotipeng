@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.spotipeng"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
@@ -38,6 +38,7 @@ dependencies {
     implementation("jp.wasabeef:recyclerview-animators:4.0.2")
     implementation("com.github.bumptech.glide:glide:4.12.0")
     implementation("org.greenrobot:eventbus:3.2.0")
+    implementation("androidx.drawerlayout:drawerlayout:1.2.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")

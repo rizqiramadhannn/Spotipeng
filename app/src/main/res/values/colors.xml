@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary_color">#52DD38</color>
+    <color name="primary_color">#278017</color>
     <color name="primary_color_variant">#278017</color>
     <color name="secondary_color">#FFFFFF</color>
     <color name="secondary_color_variant">#C6B8B8</color>
-    <color name="purple_200">#232125</color>
+    <color name="green">#52DD38</color>
     <color name="primary">#FF232125</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>

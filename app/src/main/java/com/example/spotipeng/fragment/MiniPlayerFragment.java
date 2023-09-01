@@ -120,6 +120,7 @@ public class MiniPlayerFragment extends Fragment {
     public void onMusicPlaybackStopped(MusicPlaybackStoppedEvent event) {
         // Handle the event here
         // Update UI or perform other actions
+        updatePlayPauseButton(isPlaying);
     }
 
     // Update the song title in the MiniPlayerFragment
@@ -144,5 +145,6 @@ public class MiniPlayerFragment extends Fragment {
                 playPauseButton.setImageResource(R.drawable.ic_play);
             }
         }
+        playPauseButton.invalidate();
     }
 }

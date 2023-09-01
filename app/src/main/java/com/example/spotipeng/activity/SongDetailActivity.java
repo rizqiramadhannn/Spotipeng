@@ -16,6 +16,7 @@ import com.example.spotipeng.events.MusicPlaybackLoopEvent;
 import com.example.spotipeng.events.MusicPlaybackPausedEvent;
 import com.example.spotipeng.events.MusicPlaybackResumedEvent;
 import com.example.spotipeng.events.MusicPlaybackStartedEvent;
+import com.example.spotipeng.events.MusicPlaybackStoppedEvent;
 import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
 import com.example.spotipeng.events.UpdatePlaybackSeekbarPositionEvent;
 import com.example.spotipeng.model.Song;
@@ -203,6 +204,16 @@ public class SongDetailActivity extends AppCompatActivity {
     @Subscribe
     public void onMusicPlaybackResumed(MusicPlaybackResumedEvent event){
         isPlaying = event.getStatus();
+        updatePlayPauseButton(isPlaying);
+    }
+
+    @Subscribe
+    public void onMusicPlaybackStopped(MusicPlaybackStoppedEvent event) {
+        // Handle the event here
+        // Update UI or perform other actions
+        seekBar.setProgress(0);
+        leftDurationTextView.setText(formatDuration(0));
+        rightDurationTextView.setText(formatDuration(rightduration));
         updatePlayPauseButton(isPlaying);
     }
 
