@@ -82,7 +82,7 @@ public class RegistrationActivity extends AppCompatActivity {
                         public void onResponse(Call<String> call, Response<String> response) {
                             if (response.isSuccessful()) {
                                 Snackbar.make(view, "Registration Success. Please log in", Snackbar.LENGTH_LONG).show();
-                                Intent intent = new Intent(RegistrationActivity.this, MainActivity.class);
+                                Intent intent = new Intent(RegistrationActivity.this, LoginActivity.class);
                                 startActivity(intent);
                                 finish();
                             } else {
