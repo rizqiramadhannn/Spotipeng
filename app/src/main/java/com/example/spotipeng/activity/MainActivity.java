@@ -135,15 +135,14 @@ public class MainActivity extends AppCompatActivity {
                 List<Song> jsonSong = response.body();
 
                 for (Song song : jsonSong){
-                    Log.i("TAG", "onResponse: " + song);
-                    new Song(
+                    Song currentSong = new Song(
                             song.getSinger(),
                             song.getTitle(),
-                            song.getUrl(),
+                            Constants.Song_URL + song.getUrl(),
                             song.getAlbum());
-
-                    songs.add(song);
+                    songs.add(currentSong);
                 }
+
                 showSongs();
                 EventBus.getDefault().post(new GetSongListEvent(songs));
             }
