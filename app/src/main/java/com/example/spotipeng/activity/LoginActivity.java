@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -81,6 +82,7 @@ public class LoginActivity extends AppCompatActivity {
                         public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
                             if (response.isSuccessful()) {
                                 Snackbar.make(view, "Login Success", Snackbar.LENGTH_LONG).show();
+                                Log.i("TAG", "onResponse: " + response.body());
                                 LoginResponse loginResponse = response.body();
                                 String token = loginResponse.getToken();
                                 // Handle successful login, store token, navigate to another activity, etc.

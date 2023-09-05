@@ -97,12 +97,18 @@ public class MiniPlayerFragment extends Fragment {
     @Subscribe
     public void onMusicPlaybackStarted(MusicPlaybackStartedEvent event) {
         // Handle the event here
+        if (isPlaying){
+            Intent serviceIntent = new Intent(getContext(), MusicService.class);
+            serviceIntent.setAction("STOP");
+            EventBus.getDefault().post(new MusicPlaybackStoppedEvent());
+        }
+
         Song song = event.getSong();
+        currentSong = song;
         updateSongTitle(song.getTitle());
         updateArtist(song.getSinger());
         isPlaying = event.getStatus();
         updatePlayPauseButton(isPlaying);
-        currentSong = song;
         // Other logic
     }
 

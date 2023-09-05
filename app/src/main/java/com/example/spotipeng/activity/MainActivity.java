@@ -9,6 +9,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.animation.OvershootInterpolator;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -34,12 +35,18 @@ import com.example.spotipeng.events.StartFragmentEvent;
 import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
 import com.example.spotipeng.fragment.MiniPlayerFragment;
 import com.example.spotipeng.model.Song;
+import com.example.spotipeng.model.User;
 import com.example.spotipeng.service.MusicService;
 import com.example.spotipeng.utils.Constants;
 import com.google.android.material.navigation.NavigationView;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,9 +72,12 @@ public class MainActivity extends AppCompatActivity {
     private String currentSongTitle;
     private String currentSongArtist;
     List<Song> songs = new ArrayList<>();
+    User user = new User("John Doe", "Example@mail.com");
     private Uri currentSongArtwork;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle actionBarDrawerToggle;
+    TextView nameTV;
+    TextView emailTV;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
 
         jsonPlaceHolderApi = retrofit.create(JsonPlaceHolderApi.class);
         fetchSongs();
+        fetchUser();
         setContentView(R.layout.activity_main);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -101,6 +112,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Set up the navigation drawer
         NavigationView navigationView = findViewById(R.id.navigationView);
+        nameTV = navigationView.getHeaderView(0).findViewById(R.id.NavbarName);
+        emailTV = navigationView.getHeaderView(0).findViewById(R.id.NavbarEmail);
+
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(MenuItem menuItem) {
@@ -123,36 +137,72 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void fetchSongs() {
-
-        Call<List<Song>> call = jsonPlaceHolderApi.getSongs();
-        call.enqueue(new Callback<List<Song>>() {
+        Call<JsonObject> call = jsonPlaceHolderApi.getSongs(); // Assuming your API call returns a JsonObject
+        call.enqueue(new Callback<JsonObject>() {
             @Override
-            public void onResponse(Call<List<Song>> call, Response<List<Song>> response) {
-                if (!response.isSuccessful()){
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if (!response.isSuccessful()) {
                     Log.i("Get Song", "Code: " + response.code());
                     return;
                 }
-                List<Song> jsonSong = response.body();
 
-                for (Song song : jsonSong){
-                    Song currentSong = new Song(
-                            song.getSinger(),
-                            song.getTitle(),
-                            Constants.Song_URL + song.getUrl(),
-                            song.getAlbum());
-                    songs.add(currentSong);
+                JsonObject jsonObject = response.body(); // Get the entire JSON response
+
+                if (jsonObject != null && jsonObject.has("song")) {
+                    JsonArray songArray = jsonObject.get("song").getAsJsonArray(); // Access the "song" array
+
+                    for (JsonElement element : songArray) {
+                        JsonObject songObject = element.getAsJsonObject();
+
+                        String singer = songObject.get("singer").getAsString();
+                        String title = songObject.get("title").getAsString();
+                        String url = Constants.Song_URL + songObject.get("url").getAsString();
+                        String album = songObject.get("album").getAsString();
+
+                        Song currentSong = new Song(singer, title, url, album);
+                        songs.add(currentSong);
+                    }
+
+                    showSongs();
+                    EventBus.getDefault().post(new GetSongListEvent(songs));
                 }
-
-                showSongs();
-                EventBus.getDefault().post(new GetSongListEvent(songs));
             }
 
             @Override
-            public void onFailure(Call<List<Song>> call, Throwable t) {
+            public void onFailure(Call<JsonObject> call, Throwable t) {
                 Log.i("Get Song", "Call failed " + t);
             }
         });
     }
+
+    private void fetchUser() {
+        Call<JsonObject> call = jsonPlaceHolderApi.getUser(); // Assuming your API call returns a JsonObject
+        call.enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if (!response.isSuccessful()) {
+                    Log.i("Get Song", "Code: " + response.code());
+                    return;
+                }
+
+                JsonObject jsonObject = response.body(); // Get the entire JSON response
+
+                if (jsonObject != null && jsonObject.has("user")) {
+                    JsonObject userObject = jsonObject.getAsJsonObject("user"); // Assuming "user" is a nested object
+
+                    User user = new User(userObject.get("name").getAsString(), userObject.get("email").getAsString());
+                    nameTV.setText(user.getName());
+                    emailTV.setText(user.getEmail());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                Log.i("Get Song", "Call failed " + t);
+            }
+        });
+    }
+
     public void showSongs() {
         if (songs.size() == 0){
             Toast.makeText(this, "No Songs", Toast.LENGTH_SHORT).show();

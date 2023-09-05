@@ -1,11 +1,11 @@
 package com.example.spotipeng.model;
 
 public class LoginResponse {
-    private String token;
+    private String access_token;
 
     // Getter
 
     public String getToken() {
-        return token;
+        return access_token;
     }
 }

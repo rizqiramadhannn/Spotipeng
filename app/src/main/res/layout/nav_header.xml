@@ -15,6 +15,7 @@
         android:scaleType="centerCrop" />
 
     <TextView
+        android:id="@+id/NavbarName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="John Doe"
@@ -22,6 +23,7 @@
         android:textStyle="bold" />
 
     <TextView
+        android:id="@+id/NavbarEmail"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="johndoe@example.com"
