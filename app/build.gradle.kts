@@ -39,6 +39,7 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.12.0")
     implementation("org.greenrobot:eventbus:3.2.0")
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
+    implementation("androidx.palette:palette:1.0.0")
     implementation("com.squareup.picasso:picasso:2.8")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

@@ -1,15 +1,27 @@
 package com.example.spotipeng.activity;
 
+import android.animation.ArgbEvaluator;
+import android.animation.ValueAnimator;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
-
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.GradientDrawable.Orientation;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.palette.graphics.Palette;
 
 import com.bumptech.glide.Glide;
 import com.example.spotipeng.R;
@@ -45,6 +57,7 @@ public class SongDetailActivity extends AppCompatActivity {
     private Handler handler = new Handler();
     private Runnable updateProgressRunnable;
 
+    private int currentBackgroundColor = Color.BLACK;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,9 +122,7 @@ public class SongDetailActivity extends AppCompatActivity {
             Song song = intent.getParcelableExtra("song");
             if (song != null) {
                 rightduration = song.getDuration();
-                ImageView artworkView = findViewById(R.id.artworkView);
-                String albumUrl = song.getAlbum();
-                Picasso.get().load(albumUrl).into(artworkView);
+                displayAlbum(song);
                 titleTextView.setText(song.getTitle());
                 artistTextView.setText(song.getSinger());
                 leftDurationTextView.setText(formatDuration(0));
@@ -119,6 +130,122 @@ public class SongDetailActivity extends AppCompatActivity {
             }
         }
     }
+
+//    private void displayAlbum (Song song){
+//        ImageView artworkView = findViewById(R.id.artworkView);
+//        String albumUrl = song.getAlbum();
+//        Picasso.get().load(albumUrl).into(artworkView);
+//        Bitmap bitmap = ((BitmapDrawable) artworkView.getDrawable()).getBitmap();
+//        Palette.from(bitmap).generate(palette -> {
+//            // Get the prominent color from the palette
+//            int prominentColor = palette.getDominantColor(/* default color */ Color.BLACK);
+//
+//            // Calculate the color's lightness
+//            float[] hsv = new float[3];
+//            Color.colorToHSV(prominentColor, hsv);
+//            float lightness = hsv[2]; // Extract lightness component
+//
+//            // Check if the color is too light (close to white)
+//            if (lightness > 0.8f) {
+//                // Darken the color (e.g., by reducing lightness)
+//                lightness = 0.5f; // Adjust this value as needed
+//                hsv[2] = lightness;
+//                prominentColor = Color.HSVToColor(hsv);
+//            }
+//
+//            // Create a GradientDrawable for the background
+//            GradientDrawable gradientDrawable = new GradientDrawable(
+//                    GradientDrawable.Orientation.TOP_BOTTOM,
+//                    new int[]{prominentColor, Color.BLACK}
+//            );
+//
+//            gradientDrawable.setCornerRadius(0f); // Set corner radius if needed
+//
+//            // Set the background of your RelativeLayout
+//            RelativeLayout layout = findViewById(R.id.Layout);
+//            changeStatusBarColor(prominentColor);
+//            layout.setBackground(gradientDrawable);
+//
+//            GradientDrawable currentColor = ((ColorDrawable) layout.getBackground()).getColor();
+//
+//            // Create a ValueAnimator for smooth color transition
+//            ValueAnimator colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), currentColor, prominentColor);
+//            colorAnimation.setDuration(250); // Set the duration to 250 milliseconds
+//            colorAnimation.addUpdateListener(animator -> {
+//                int color = (int) animator.getAnimatedValue();
+//                layout.setBackground(gradientDrawable);
+//            });
+//            colorAnimation.start();
+//
+//            changeStatusBarColor(prominentColor);
+//        });
+//    }
+
+    private void displayAlbum(Song song) {
+        ImageView artworkView = findViewById(R.id.artworkView);
+        String albumUrl = song.getAlbum();
+        Picasso.get().load(albumUrl).into(artworkView);
+        Bitmap bitmap = ((BitmapDrawable) artworkView.getDrawable()).getBitmap();
+        Palette.from(bitmap).generate(palette -> {
+            // Get the prominent color from the palette
+            int prominentColor = palette.getDominantColor(currentBackgroundColor);
+
+            // Calculate the color's lightness
+            float[] hsv = new float[3];
+            Color.colorToHSV(prominentColor, hsv);
+            float lightness = hsv[2]; // Extract lightness component
+
+            // Check if the color is too light (close to white)
+            if (lightness > 0.8f) {
+                // Darken the color (e.g., by reducing lightness)
+                lightness = 0.5f; // Adjust this value as needed
+                hsv[2] = lightness;
+                prominentColor = Color.HSVToColor(hsv);
+            }
+
+            // Create a new GradientDrawable for the target background
+            GradientDrawable targetDrawable = new GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{prominentColor, Color.BLACK}
+            );
+            RelativeLayout layout = findViewById(R.id.Layout);
+            targetDrawable.setCornerRadius(0f); // Set corner radius if needed
+
+            // Create a ValueAnimator to transition between the current and target GradientDrawables
+            ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+            animator.setDuration(10000); // Set the duration to 250 milliseconds
+
+            // Add an update listener to smoothly transition the background
+            int finalProminentColor = prominentColor;
+            animator.addUpdateListener(valueAnimator -> {
+                float fraction = valueAnimator.getAnimatedFraction();
+                GradientDrawable transitionDrawable = new GradientDrawable(
+                        GradientDrawable.Orientation.TOP_BOTTOM,
+                        new int[]{blendColors(currentBackgroundColor, finalProminentColor, fraction), Color.BLACK}
+                );
+                transitionDrawable.setCornerRadius(0f); // Set corner radius if needed
+                layout.setBackground(transitionDrawable);
+            });
+            changeStatusBarColor(prominentColor);
+            // Start the animation
+            animator.start();
+
+            // Update the current background color
+            currentBackgroundColor = prominentColor;
+        });
+    }
+
+    // Helper method to blend two colors based on a fraction
+    private int blendColors(int color1, int color2, float fraction) {
+        float inverseFraction = 1f - fraction;
+
+        int red = (int) (Color.red(color1) * fraction + Color.red(color2) * inverseFraction);
+        int green = (int) (Color.green(color1) * fraction + Color.green(color2) * inverseFraction);
+        int blue = (int) (Color.blue(color1) * fraction + Color.blue(color2) * inverseFraction);
+
+        return Color.rgb(red, green, blue);
+    }
+
 
     @Subscribe
     public void onUpdatePlaybackPosition(UpdatePlaybackPositionEvent event) {
@@ -135,9 +262,7 @@ public class SongDetailActivity extends AppCompatActivity {
     public void onMusicPlaybackStartedEvent(MusicPlaybackStartedEvent event) {
         Song song = event.getSong();
         rightduration = song.getDuration();
-        ImageView artworkView = findViewById(R.id.artworkView);
-        String albumUrl = song.getAlbum();
-        Picasso.get().load(albumUrl).into(artworkView);
+        displayAlbum(song);
         titleTextView.setText(song.getTitle());
         artistTextView.setText(song.getSinger());
         leftDurationTextView.setText(formatDuration(0));
@@ -193,6 +318,14 @@ public class SongDetailActivity extends AppCompatActivity {
             }
         }
         playPauseButton.invalidate();
+    }
+
+    private void changeStatusBarColor(int color) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(color);
+        }
     }
 
     private String formatDuration(int duration) {

@@ -1,19 +1,31 @@
 package com.example.spotipeng.fragment;
 
+import android.animation.ArgbEvaluator;
+import android.animation.ValueAnimator;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
+import androidx.palette.graphics.Palette;
 
 import com.example.spotipeng.events.GetCurrentSongEvent;
 import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
@@ -25,6 +37,7 @@ import com.example.spotipeng.events.MusicPlaybackResumedEvent;
 import com.example.spotipeng.events.MusicPlaybackStartedEvent;
 import com.example.spotipeng.events.MusicPlaybackStoppedEvent;
 import com.example.spotipeng.model.Song;
+import com.squareup.picasso.Picasso;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -37,7 +50,7 @@ public class MiniPlayerFragment extends Fragment {
     private ImageButton playPauseButton;
     private boolean isPlaying = false;
     private Song currentSong;
-
+    private ConstraintLayout layout;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,6 +71,8 @@ public class MiniPlayerFragment extends Fragment {
         songTitleTextView = rootView.findViewById(R.id.titleView);
         artistTextView = rootView.findViewById(R.id.artistView);
         playPauseButton = rootView.findViewById(R.id.playPauseButton);
+        artworkView = rootView.findViewById(R.id.artworkView);
+        layout = rootView.findViewById(R.id.layout);
 
         // Set click listener for the play/pause button
         playPauseButton.setOnClickListener(v -> {
@@ -102,12 +117,13 @@ public class MiniPlayerFragment extends Fragment {
             serviceIntent.setAction("STOP");
             EventBus.getDefault().post(new MusicPlaybackStoppedEvent());
         }
-
         Song song = event.getSong();
         currentSong = song;
+
         updateSongTitle(song.getTitle());
         updateArtist(song.getSinger());
         isPlaying = event.getStatus();
+        displayAlbum(song);
         updatePlayPauseButton(isPlaying);
         // Other logic
     }
@@ -153,4 +169,56 @@ public class MiniPlayerFragment extends Fragment {
         }
         playPauseButton.invalidate();
     }
+
+    private void displayAlbum(Song song) {
+        String albumUrl = song.getAlbum();
+        Picasso.get().load(albumUrl).into(artworkView);
+
+        // Ensure the ImageView has been loaded before generating the palette
+        artworkView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                artworkView.getViewTreeObserver().removeOnPreDrawListener(this);
+                Bitmap bitmap = ((BitmapDrawable) artworkView.getDrawable()).getBitmap();
+
+                Palette.from(bitmap).generate(palette -> {
+                    // Get the prominent color from the palette
+                    int prominentColor = palette.getDominantColor(/* default color */ Color.BLACK);
+
+                    // Calculate the color's lightness
+                    float[] hsv = new float[3];
+                    Color.colorToHSV(prominentColor, hsv);
+                    float lightness = hsv[2]; // Extract lightness component
+
+                    // Check if the color is too light (close to white)
+                    if (lightness > 0.5f) {
+                        // Darken the color (e.g., by reducing lightness)
+                        lightness = 0.5f; // Adjust this value as needed
+                        hsv[2] = lightness;
+                        prominentColor = Color.HSVToColor(hsv);
+                    }
+
+                    // Get the current background drawable of the ConstraintLayout
+                    Drawable currentBackground = layout.getBackground();
+
+                    // If the current background is a ColorDrawable, extract the color
+                    if (currentBackground instanceof ColorDrawable) {
+                        int currentColor = ((ColorDrawable) currentBackground).getColor();
+                        // Create a ValueAnimator for smooth color transition
+                        ValueAnimator colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), currentColor, prominentColor);
+                        colorAnimation.setDuration(500); // Set the duration in milliseconds
+                        colorAnimation.addUpdateListener(animator -> {
+                            int color = (int) animator.getAnimatedValue();
+                            layout.setBackgroundColor(color);
+                        });
+                        colorAnimation.start();
+                    }
+                });
+                return true;
+            }
+        });
+    }
+
 }
+
+
