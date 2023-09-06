@@ -11,8 +11,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -129,6 +132,15 @@ public class SongDetailActivity extends AppCompatActivity {
                 rightDurationTextView.setText(formatDuration(song.getDuration()));
             }
         }
+
+        ImageButton backArrowButton = findViewById(R.id.backArrowButton);
+
+        backArrowButton.setOnClickListener(v -> {
+            // Apply the slide-out animation when the back arrow button is clicked
+            onBackPressed();
+        });
+
+        backArrowButton.setVisibility(View.VISIBLE);
     }
 
     private void displayAlbum(Song song) {
@@ -305,5 +317,13 @@ public class SongDetailActivity extends AppCompatActivity {
         leftDurationTextView.setText(formatDuration(0));
         rightDurationTextView.setText(formatDuration(rightduration));
     }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        // Set custom animations for the transition
+        overridePendingTransition(0, R.anim.slide_out);
+    }
+
 
 }

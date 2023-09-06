@@ -1,25 +1,45 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/Layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/primary"
 
     android:padding="16dp">
+    <ImageButton
+        android:id="@+id/backArrowButton"
+        android:layout_width="@dimen/lg"
+        android:layout_height="@dimen/lg"
+        android:layout_marginTop="@dimen/sm"
+        android:src="@drawable/ic_down_arrow"
+        android:background="?attr/selectableItemBackgroundBorderless" />
 
-    <ImageView
-        android:id="@+id/artworkView"
-        android:layout_marginTop="@dimen/x_lg"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
-        android:layout_centerHorizontal="true"
-        android:src="@drawable/ic_default_artwork" />
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/contraintLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/artworkView"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="@dimen/x_lg"
+            android:layout_centerHorizontal="true"
+            android:src="@drawable/ic_default_artwork"
+            app:layout_constraintDimensionRatio="1:0.8"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
 
     <TextView
         android:id="@+id/titleTextView"
         android:layout_width="wrap_content"
         android:textColor="@color/white"
         android:layout_height="wrap_content"
-        android:layout_below="@id/artworkView"
+        android:layout_below="@id/contraintLayout"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="@dimen/lg"
         android:text="Song Title"

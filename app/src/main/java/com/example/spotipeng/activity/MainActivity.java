@@ -284,6 +284,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, SongDetailActivity.class);
         intent.putExtra("song", currentSong); // Pass the currentSong to the SongDetailActivity
         startActivity(intent);
+        overridePendingTransition(R.anim.slide_in, 1);
     }
 
     private void showMiniPlayerFragment() {
