@@ -126,6 +126,7 @@
             android:id="@+id/playPauseButton"
             android:layout_width="45dp"
             android:layout_height="45dp"
+            android:src="@drawable/ic_play"
             android:background="@android:color/transparent"
             android:layout_weight="1"
             android:scaleType="fitCenter" />

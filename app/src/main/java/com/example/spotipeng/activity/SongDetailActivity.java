@@ -3,6 +3,7 @@ package com.example.spotipeng.activity;
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
@@ -31,6 +32,7 @@ import com.example.spotipeng.R;
 import com.example.spotipeng.events.MusicPlaybackLoopEvent;
 import com.example.spotipeng.events.MusicPlaybackPausedEvent;
 import com.example.spotipeng.events.MusicPlaybackResumedEvent;
+import com.example.spotipeng.events.MusicPlaybackShuffleEvent;
 import com.example.spotipeng.events.MusicPlaybackStartedEvent;
 import com.example.spotipeng.events.MusicPlaybackStoppedEvent;
 import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
@@ -56,8 +58,10 @@ public class SongDetailActivity extends AppCompatActivity {
     private ImageButton playPauseButton;
     private boolean isPlaying = true;
     private int loopStatus = 0;
+    private int shuffleStatus = 0;
     private int rightduration;
     private Handler handler = new Handler();
+    private SharedPreferences preferences;
     private Runnable updateProgressRunnable;
 
     private int currentBackgroundColor = Color.BLACK;
@@ -81,6 +85,15 @@ public class SongDetailActivity extends AppCompatActivity {
         backButton = findViewById(R.id.backButton);
         playPauseButton = findViewById(R.id.playPauseButton);
 
+        preferences = getSharedPreferences("spotipeng", MODE_PRIVATE);
+        shuffleStatus = preferences.getInt("shuffleStatus", 0); // Default value 0 (or any default you prefer)
+        loopStatus = preferences.getInt("loopStatus", 0); // Default value 0 (or any default you prefer)
+        if (shuffleStatus == 1){
+            shuffleButton.setImageResource(R.drawable.ic_shuffle_on);
+        }
+        if (loopStatus == 1){
+            loopButton.setImageResource(R.drawable.ic_loop_on);
+        }
         // Set click listeners for control buttons
         loopButton.setOnClickListener(v -> {
             if (loopStatus == 1){
@@ -88,10 +101,25 @@ public class SongDetailActivity extends AppCompatActivity {
             } else {
                 loopStatus = 1;
             }
+            preferences = getSharedPreferences("spotipeng", MODE_PRIVATE);
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putInt("loopStatus", loopStatus);
+            editor.apply();
             EventBus.getDefault().post(new MusicPlaybackLoopEvent(loopStatus));
         });
 
-        shuffleButton.setOnClickListener(v -> toggleShuffling());
+        shuffleButton.setOnClickListener(v -> {
+            if (shuffleStatus == 1){
+                shuffleStatus = 0;
+            } else {
+                shuffleStatus = 1;
+            }
+            SharedPreferences preferences = getSharedPreferences("spotipeng", MODE_PRIVATE);
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putInt("shuffleStatus", shuffleStatus);
+            editor.apply();
+            EventBus.getDefault().post(new MusicPlaybackShuffleEvent(shuffleStatus));
+        });
         nextButton.setOnClickListener(v -> playNextSong());
         backButton.setOnClickListener(v -> playPreviousSong());
         playPauseButton.setOnClickListener(v -> togglePlayback());
@@ -244,8 +272,14 @@ public class SongDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void toggleShuffling() {
-        // Implement logic to toggle shuffling
+    @Subscribe
+    public void onMusicPlaybackShuffleEvent(MusicPlaybackShuffleEvent event) {
+        int status = event.getStatus();
+        if (status == 1){
+            shuffleButton.setImageResource(R.drawable.ic_shuffle_on);
+        } else {
+            shuffleButton.setImageResource(R.drawable.ic_shuffle_off);
+        }
     }
 
     private void playNextSong() {

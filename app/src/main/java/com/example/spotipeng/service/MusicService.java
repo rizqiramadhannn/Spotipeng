@@ -31,6 +31,7 @@ import com.example.spotipeng.events.GetSongListEvent;
 import com.example.spotipeng.events.MusicPlaybackLoopEvent;
 import com.example.spotipeng.events.MusicPlaybackPausedEvent;
 import com.example.spotipeng.events.MusicPlaybackResumedEvent;
+import com.example.spotipeng.events.MusicPlaybackShuffleEvent;
 import com.example.spotipeng.events.MusicPlaybackStartedEvent;
 import com.example.spotipeng.events.MusicPlaybackStoppedEvent;
 import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
@@ -43,6 +44,7 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -59,6 +61,7 @@ public class MusicService extends Service {
     private Song currentSong;
     private boolean isPlaying = false;
     private int loopStatus = 0;
+    private int shuffleStatus = 0;
     List<Song> songs = new ArrayList<>();
     private int currentSongIndex = -1;
     private Handler handler = new Handler();
@@ -91,6 +94,7 @@ public class MusicService extends Service {
     @Subscribe
     public void onGetSongList(GetSongListEvent event) {
         songs = event.getSongs();
+        currentSongIndex = songs.indexOf(currentSong);
     }
 
     @Override
@@ -142,6 +146,11 @@ public class MusicService extends Service {
     }
 
     @Subscribe
+    public void onMusicPlaybackShuffle(MusicPlaybackShuffleEvent event) {
+        shuffleStatus = event.getStatus();
+    }
+
+    @Subscribe
     public void onMusicPlaybackResumedEvent(MusicPlaybackResumedEvent event) {
         showNotification(currentSong);
     }
@@ -155,11 +164,17 @@ public class MusicService extends Service {
         if (songs.isEmpty()) {
             return; // No songs in the playlist
         }
-        if (currentSongIndex == songs.size() - 1 && loopStatus == 0) {
+        if (currentSongIndex == songs.size() - 1 && loopStatus == 0 && shuffleStatus != 1) {
             Toast.makeText(this, "This is the end of Playlist", Toast.LENGTH_SHORT).show();
             return;
         }
-        currentSongIndex = (currentSongIndex + 1) % songs.size(); // Get the index of the next song
+        if (shuffleStatus == 1){
+            int randomIndex = new Random().nextInt(songs.size());
+            currentSongIndex = randomIndex;
+        } else {
+            currentSongIndex = (currentSongIndex + 1) % songs.size();
+        }
+         // Get the index of the next song
         EventBus.getDefault().post(new MusicPlaybackStartedEvent(songs.get(currentSongIndex)));
         playSong(songs.get(currentSongIndex)); // Play the next song
     }
@@ -172,7 +187,12 @@ public class MusicService extends Service {
             Toast.makeText(this, "This is the beginning of Playlist", Toast.LENGTH_SHORT).show();
             return;
         }
-        currentSongIndex = (currentSongIndex - 1 + songs.size()) % songs.size(); // Get the index of the previous song
+        if (shuffleStatus == 1){
+            int randomIndex = new Random().nextInt(songs.size());
+            currentSongIndex = randomIndex;
+        } else {
+            currentSongIndex = (currentSongIndex - 1) % songs.size();
+        } // Get the index of the previous song
         EventBus.getDefault().post(new MusicPlaybackStartedEvent(songs.get(currentSongIndex)));
         playSong(songs.get(currentSongIndex)); // Play the previous song
     }

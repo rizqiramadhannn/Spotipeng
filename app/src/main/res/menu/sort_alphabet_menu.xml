@@ -1,0 +1,9 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/sortAsc"
+        android:title="Sort A-Z"
+        style="style/menuItemStyle"/>
+    <item
+        android:id="@+id/sortDesc"
+        android:title="Sort Z-A" />
+</menu>

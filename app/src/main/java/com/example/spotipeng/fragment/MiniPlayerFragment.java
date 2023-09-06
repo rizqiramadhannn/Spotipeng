@@ -20,6 +20,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -37,6 +38,7 @@ import com.example.spotipeng.events.MusicPlaybackResumedEvent;
 import com.example.spotipeng.events.MusicPlaybackStartedEvent;
 import com.example.spotipeng.events.MusicPlaybackStoppedEvent;
 import com.example.spotipeng.model.Song;
+import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
 import org.greenrobot.eventbus.EventBus;
@@ -172,13 +174,13 @@ public class MiniPlayerFragment extends Fragment {
 
     private void displayAlbum(Song song) {
         String albumUrl = song.getAlbum();
-        Picasso.get().load(albumUrl).into(artworkView);
 
-        // Ensure the ImageView has been loaded before generating the palette
-        artworkView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+        // Load the image with Picasso and use a Callback
+        Picasso.get().load(albumUrl).into(artworkView, new Callback() {
             @Override
-            public boolean onPreDraw() {
-                artworkView.getViewTreeObserver().removeOnPreDrawListener(this);
+            public void onSuccess() {
+                // The image has been successfully loaded into the artworkView.
+                // Now, you can safely access the Drawable.
                 Bitmap bitmap = ((BitmapDrawable) artworkView.getDrawable()).getBitmap();
 
                 Palette.from(bitmap).generate(palette -> {
@@ -214,10 +216,15 @@ public class MiniPlayerFragment extends Fragment {
                         colorAnimation.start();
                     }
                 });
-                return true;
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(getContext(), "An Error has occurred", Toast.LENGTH_SHORT).show();
             }
         });
     }
+
 
 }
 

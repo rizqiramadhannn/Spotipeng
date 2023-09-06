@@ -1,0 +1,8 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/sortByTitle"
+        android:title="Sort by Title" />
+    <item
+        android:id="@+id/sortByArtist"
+        android:title="Sort by Artist" />
+</menu>

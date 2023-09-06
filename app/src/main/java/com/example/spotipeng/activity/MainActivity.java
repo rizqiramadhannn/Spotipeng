@@ -9,6 +9,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.animation.OvershootInterpolator;
+import android.widget.Button;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,6 +51,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -78,6 +82,15 @@ public class MainActivity extends AppCompatActivity {
     private ActionBarDrawerToggle actionBarDrawerToggle;
     TextView nameTV;
     TextView emailTV;
+    // Define constants for sorting options
+    private static final int SORT_BY_TITLE = 1;
+    private static final int SORT_BY_ARTIST = 2;
+    private static final int ASC = 1;
+    private static final int DESC = 2;
+
+    // Define a variable to keep track of the current sorting option
+    private int currentSortOption = SORT_BY_TITLE;
+    private int currentAlphabetOption = ASC;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -129,6 +142,56 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        Button sortButton = findViewById(R.id.sortButton);
+
+// Create a PopupMenu
+        PopupMenu popupMenu = new PopupMenu(this, sortButton);
+
+// Inflate the menu resource (menu_sort.xml) containing the sorting options
+        popupMenu.getMenuInflater().inflate(R.menu.sort_menu, popupMenu.getMenu());
+
+// Set an item click listener for the menu items
+        popupMenu.setOnMenuItemClickListener(item -> {
+            if (currentSortOption == SORT_BY_TITLE) {
+                if (item.getItemId() == R.id.sortByArtist) {
+                    // Sort by artist
+                    onSortOptionSelected(SORT_BY_ARTIST, currentAlphabetOption);
+                }
+            } else if (currentSortOption == SORT_BY_ARTIST) {
+                if (item.getItemId() == R.id.sortByTitle) {
+                    // Sort by title
+                    onSortOptionSelected(SORT_BY_TITLE, currentAlphabetOption);
+                }
+            }
+            return true; // Return true to indicate that the item click has been handled
+        });
+
+        Button sortAlphabetButton = findViewById(R.id.sortAlphabetButton);
+
+        PopupMenu popupAlphabetMenu = new PopupMenu(this, sortAlphabetButton);
+
+// Inflate the menu resource (menu_sort.xml) containing the sorting options
+        popupAlphabetMenu.getMenuInflater().inflate(R.menu.sort_alphabet_menu, popupAlphabetMenu.getMenu());
+
+// Set an item click listener for the menu items
+        popupAlphabetMenu.setOnMenuItemClickListener(item -> {
+            if (currentAlphabetOption == ASC) {
+                if (item.getItemId() == R.id.sortDesc) {
+                    // Sort by artist
+                    onSortOptionSelected(currentSortOption, DESC);
+                }
+            } else if (currentAlphabetOption == DESC) {
+                if (item.getItemId() == R.id.sortAsc) {
+                    // Sort by title
+                    onSortOptionSelected(currentSortOption ,ASC);
+                }
+            }
+            return true; // Return true to indicate that the item click has been handled
+        });
+
+        sortButton.setOnClickListener(v -> popupMenu.show());
+        sortAlphabetButton.setOnClickListener(v -> popupAlphabetMenu.show());
+
         recyclerView = findViewById(R.id.recyclerview);
         FragmentManager fragmentManager = getSupportFragmentManager();
         miniPlayerFragment = (MiniPlayerFragment) fragmentManager.findFragmentById(R.id.miniPlayerContainer);
@@ -164,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     showSongs();
-                    EventBus.getDefault().post(new GetSongListEvent(songs));
+                    EventBus.getDefault().post(new GetSongListEvent(allSongs));
                 }
             }
 
@@ -224,11 +287,8 @@ public class MainActivity extends AppCompatActivity {
         scaleInAnimationAdapter.setInterpolator(new OvershootInterpolator());
         scaleInAnimationAdapter.setFirstOnly(false);
         recyclerView.setAdapter(scaleInAnimationAdapter);
-    }
-
-    @Subscribe
-    public void onUpdatePlaybackPosition(UpdatePlaybackPositionEvent event) {
-        showMiniPlayerFragment();
+        onSortOptionSelected(currentSortOption, currentAlphabetOption);
+        EventBus.getDefault().post(new GetSongListEvent(allSongs));
     }
 
     @Override
@@ -301,17 +361,6 @@ public class MainActivity extends AppCompatActivity {
 
         transaction.commit();
     }
-    private void hideMiniPlayerFragment() {
-        // Hide the MiniPlayerFragment
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-
-        if (miniPlayerFragment != null) {
-            transaction.hide(miniPlayerFragment);
-        }
-
-        transaction.commit();
-    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -319,6 +368,48 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    // Function to sort the songs based on the current sorting option
+    private void sortSongs() {
+        switch (currentSortOption) {
+            case SORT_BY_TITLE:
+                // Sort by Title
+                Collections.sort(allSongs, new Comparator<Song>() {
+                    @Override
+                    public int compare(Song song1, Song song2) {
+                        if (currentAlphabetOption == ASC){
+                            return song1.getTitle().compareToIgnoreCase(song2.getTitle());
+                        } else {
+                            return song2.getTitle().compareToIgnoreCase(song1.getTitle());
+                        }
+
+                    }
+                });
+                break;
+            case SORT_BY_ARTIST:
+                // Sort by Artist
+                Collections.sort(allSongs, new Comparator<Song>() {
+                    @Override
+                    public int compare(Song song1, Song song2) {
+                        if (currentAlphabetOption == ASC){
+                            return song1.getSinger().compareToIgnoreCase(song2.getSinger());
+                        } else {
+                            return song2.getSinger().compareToIgnoreCase(song1.getSinger());
+                        }
+                    }
+                });
+                break;
+        }
+    }
+
+
+    // Function to handle sorting option selection
+    private void onSortOptionSelected(int sortOption, int alphabetOption) {
+        currentSortOption = sortOption;
+        currentAlphabetOption = alphabetOption;
+        sortSongs();
+        songAdapter.notifyDataSetChanged(); // Notify the adapter that the data has changed
     }
 
     private void logout() {
