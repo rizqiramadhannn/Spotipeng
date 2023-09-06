@@ -131,56 +131,6 @@ public class SongDetailActivity extends AppCompatActivity {
         }
     }
 
-//    private void displayAlbum (Song song){
-//        ImageView artworkView = findViewById(R.id.artworkView);
-//        String albumUrl = song.getAlbum();
-//        Picasso.get().load(albumUrl).into(artworkView);
-//        Bitmap bitmap = ((BitmapDrawable) artworkView.getDrawable()).getBitmap();
-//        Palette.from(bitmap).generate(palette -> {
-//            // Get the prominent color from the palette
-//            int prominentColor = palette.getDominantColor(/* default color */ Color.BLACK);
-//
-//            // Calculate the color's lightness
-//            float[] hsv = new float[3];
-//            Color.colorToHSV(prominentColor, hsv);
-//            float lightness = hsv[2]; // Extract lightness component
-//
-//            // Check if the color is too light (close to white)
-//            if (lightness > 0.8f) {
-//                // Darken the color (e.g., by reducing lightness)
-//                lightness = 0.5f; // Adjust this value as needed
-//                hsv[2] = lightness;
-//                prominentColor = Color.HSVToColor(hsv);
-//            }
-//
-//            // Create a GradientDrawable for the background
-//            GradientDrawable gradientDrawable = new GradientDrawable(
-//                    GradientDrawable.Orientation.TOP_BOTTOM,
-//                    new int[]{prominentColor, Color.BLACK}
-//            );
-//
-//            gradientDrawable.setCornerRadius(0f); // Set corner radius if needed
-//
-//            // Set the background of your RelativeLayout
-//            RelativeLayout layout = findViewById(R.id.Layout);
-//            changeStatusBarColor(prominentColor);
-//            layout.setBackground(gradientDrawable);
-//
-//            GradientDrawable currentColor = ((ColorDrawable) layout.getBackground()).getColor();
-//
-//            // Create a ValueAnimator for smooth color transition
-//            ValueAnimator colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), currentColor, prominentColor);
-//            colorAnimation.setDuration(250); // Set the duration to 250 milliseconds
-//            colorAnimation.addUpdateListener(animator -> {
-//                int color = (int) animator.getAnimatedValue();
-//                layout.setBackground(gradientDrawable);
-//            });
-//            colorAnimation.start();
-//
-//            changeStatusBarColor(prominentColor);
-//        });
-//    }
-
     private void displayAlbum(Song song) {
         ImageView artworkView = findViewById(R.id.artworkView);
         String albumUrl = song.getAlbum();
