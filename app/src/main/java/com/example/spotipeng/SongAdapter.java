@@ -19,6 +19,7 @@ import com.example.spotipeng.events.MusicPlaybackStartedEvent;
 import com.example.spotipeng.events.StartFragmentEvent;
 import com.example.spotipeng.model.Song;
 import com.example.spotipeng.service.MusicService;
+import com.squareup.picasso.Picasso;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -54,10 +55,9 @@ public class SongAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         viewHolder.titleHolder.setText(song.getTitle());
         viewHolder.artistHolder.setText(song.getSinger());
 
-        Uri artworkUri = Uri.parse(song.getAlbum());
+        String artworkUri = song.getAlbum();
         if (artworkUri != null){
-            viewHolder.artworkHolder.setImageURI(artworkUri);
-
+            Picasso.get().load(artworkUri).into(viewHolder.artworkHolder);
             if (viewHolder.artworkHolder.getDrawable() == null){
                 viewHolder.artworkHolder.setImageResource(R.drawable.ic_default_artwork);
             }

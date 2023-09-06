@@ -112,15 +112,15 @@ public class MiniPlayerFragment extends Fragment {
         // Other logic
     }
 
-    @Subscribe
-    public void onUpdatePlaybackPosition(UpdatePlaybackPositionEvent event) {
-        // Handle the event here
-        Song song = event.getSong();
-        updateSongTitle(song.getTitle());
-        updateArtist(song.getSinger());
-        currentSong = song;
-        // Other logic
-    }
+//    @Subscribe
+//    public void onUpdatePlaybackPosition(UpdatePlaybackPositionEvent event) {
+//        // Handle the event here
+//        Song song = event.getSong();
+//        updateSongTitle(song.getTitle());
+//        updateArtist(song.getSinger());
+//        currentSong = song;
+//        // Other logic
+//    }
 
     @Subscribe
     public void onMusicPlaybackStopped(MusicPlaybackStoppedEvent event) {

@@ -295,8 +295,8 @@ public class MusicService extends Service {
             public void run() {
                 if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                     int currentPosition = mediaPlayer.getCurrentPosition();
-                    int playbackProgress = calculatePlaybackProgress(currentPosition);
-                    remoteViews.setProgressBar(R.id.notification_progress_bar, song.getDuration(), playbackProgress, false);
+
+                    remoteViews.setProgressBar(R.id.notification_progress_bar, song.getDuration(), currentPosition, false);
 
                     // Update elapsed time and remaining time TextViews
                     remoteViews.setTextViewText(R.id.notification_elapsed_time, formatDuration(currentPosition));
@@ -305,13 +305,7 @@ public class MusicService extends Service {
                     // Update the notification
                     NotificationManagerCompat notificationManager = NotificationManagerCompat.from(MusicService.this);
                     if (ActivityCompat.checkSelfPermission(MusicService.this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                        // TODO: Consider calling
-                        //    ActivityCompat#requestPermissions
-                        // here to request the missing permissions, and then overriding
-                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                        //                                          int[] grantResults)
-                        // to handle the case where the user grants the permission. See the documentation
-                        // for ActivityCompat#requestPermissions for more details.
+                        // Handle permission checks
                         return;
                     }
                     notificationManager.notify(NOTIFICATION_ID, notification);
@@ -320,6 +314,7 @@ public class MusicService extends Service {
                     handler.postDelayed(this, 1000); // Update every 1 second
                 }
             }
+
         });
         // Create a notification with custom views
 
@@ -329,20 +324,6 @@ public class MusicService extends Service {
 
         // Set up the handler for updating progress and time TextViews
         // Start the progress bar update every 1 second
-    }
-
-    private int calculatePlaybackProgress(int currentPosition) {
-        if (mediaPlayer != null) {
-            int totalDuration = mediaPlayer.getDuration();
-
-            // Calculate the playback progress in percentage
-            double progressPercentage = (currentPosition * 100.0) / totalDuration;
-
-            // Ensure the progress is within the valid range (0 to 100)
-            return (int) Math.min(100, Math.max(0, progressPercentage));
-        }
-
-        return 0; // Return 0 if mediaPlayer is not available
     }
 
 

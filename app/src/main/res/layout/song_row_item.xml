@@ -26,7 +26,7 @@
                 android:layout_height="60dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                android:scaleType="center"
+                android:scaleType="centerCrop"
                 android:src="@drawable/ic_default_artwork"
                 android:contentDescription="@string/app_name" />
 
@@ -39,6 +39,7 @@
                 app:layout_constraintStart_toEndOf="@+id/artworkView"
                 app:layout_constraintEnd_toEndOf="parent"
                 android:text="Test Title"
+                android:layout_marginHorizontal="@dimen/md"
                 android:textColor="@color/white"
                 android:maxLines="1"
                 android:textStyle="bold"
@@ -46,6 +47,7 @@
 
             <TextView
                 android:id="@+id/artistView"
+                android:layout_marginHorizontal="@dimen/md"
                 android:layout_width="0dp"
                 android:layout_marginBottom="@dimen/sm"
                 android:layout_height="wrap_content"

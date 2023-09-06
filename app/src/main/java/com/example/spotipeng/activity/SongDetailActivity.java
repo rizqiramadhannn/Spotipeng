@@ -1,6 +1,7 @@
 package com.example.spotipeng.activity;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.widget.ImageButton;
@@ -21,6 +22,7 @@ import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
 import com.example.spotipeng.events.UpdatePlaybackSeekbarPositionEvent;
 import com.example.spotipeng.model.Song;
 import com.example.spotipeng.service.MusicService;
+import com.squareup.picasso.Picasso;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -107,7 +109,9 @@ public class SongDetailActivity extends AppCompatActivity {
             Song song = intent.getParcelableExtra("song");
             if (song != null) {
                 rightduration = song.getDuration();
-                // Update views with song data
+                ImageView artworkView = findViewById(R.id.artworkView);
+                String albumUrl = song.getAlbum();
+                Picasso.get().load(albumUrl).into(artworkView);
                 titleTextView.setText(song.getTitle());
                 artistTextView.setText(song.getSinger());
                 leftDurationTextView.setText(formatDuration(0));
@@ -131,7 +135,9 @@ public class SongDetailActivity extends AppCompatActivity {
     public void onMusicPlaybackStartedEvent(MusicPlaybackStartedEvent event) {
         Song song = event.getSong();
         rightduration = song.getDuration();
-        // Update views with song data
+        ImageView artworkView = findViewById(R.id.artworkView);
+        String albumUrl = song.getAlbum();
+        Picasso.get().load(albumUrl).into(artworkView);
         titleTextView.setText(song.getTitle());
         artistTextView.setText(song.getSinger());
         leftDurationTextView.setText(formatDuration(0));
@@ -186,6 +192,7 @@ public class SongDetailActivity extends AppCompatActivity {
                 playPauseButton.setImageResource(R.drawable.ic_play);
             }
         }
+        playPauseButton.invalidate();
     }
 
     private String formatDuration(int duration) {
@@ -209,12 +216,11 @@ public class SongDetailActivity extends AppCompatActivity {
 
     @Subscribe
     public void onMusicPlaybackStopped(MusicPlaybackStoppedEvent event) {
-        // Handle the event here
+        updatePlayPauseButton(false);
         // Update UI or perform other actions
         seekBar.setProgress(0);
         leftDurationTextView.setText(formatDuration(0));
         rightDurationTextView.setText(formatDuration(rightduration));
-        updatePlayPauseButton(isPlaying);
     }
 
 }
