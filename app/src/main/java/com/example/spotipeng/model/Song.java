@@ -8,21 +8,31 @@ public class Song implements Parcelable {
     String Title;
     String URL;
     String Album;
+    String Lyrics;
     private int Duration;
 
     // Other constructors and methods
 
-    public Song(String Singer, String Title, String URL, String Album) {
+    public Song(String Singer, String Title, String URL, String Album, String Lyrics) {
         this.Singer = Singer;
         this.Title = Title;
         this.URL = URL;
         this.Album = Album;
+        this.Lyrics = Lyrics;
     }
 
 
 
     public int getDuration() {
         return Duration;
+    }
+
+    public String getURL() {
+        return URL;
+    }
+
+    public String getLyrics() {
+        return Lyrics;
     }
 
     public void setDuration(int Duration) {
@@ -51,6 +61,11 @@ public class Song implements Parcelable {
         URL = in.readString();
         Album = in.readString();
         Duration = in.readInt();
+        Lyrics = in.readString();
+    }
+
+    public void setLyrics(String lyrics) {
+        Lyrics = lyrics;
     }
 
     public static final Creator<Song> CREATOR = new Creator<Song>() {
@@ -77,5 +92,6 @@ public class Song implements Parcelable {
         dest.writeString(URL);
         dest.writeString(Album);
         dest.writeInt(Duration);
+        dest.writeString(Lyrics);
     }
 }

@@ -28,6 +28,7 @@ import com.example.spotipeng.R;
 import com.example.spotipeng.activity.SongDetailActivity;
 import com.example.spotipeng.api.JsonPlaceHolderApi;
 import com.example.spotipeng.events.GetSongListEvent;
+import com.example.spotipeng.events.CloseLyricsEvent;
 import com.example.spotipeng.events.MusicPlaybackLoopEvent;
 import com.example.spotipeng.events.MusicPlaybackPausedEvent;
 import com.example.spotipeng.events.MusicPlaybackResumedEvent;
@@ -186,6 +187,8 @@ public class MusicService extends Service {
         if (currentSongIndex == 0 && loopStatus == 0) {
             Toast.makeText(this, "This is the beginning of Playlist", Toast.LENGTH_SHORT).show();
             return;
+        } else if (loopStatus == 1) {
+            currentSongIndex = songs.size();
         }
         if (shuffleStatus == 1){
             int randomIndex = new Random().nextInt(songs.size());
@@ -207,15 +210,15 @@ public class MusicService extends Service {
                 mediaPlayer.prepare();
                 int duration = mediaPlayer.getDuration();
                 song.setDuration(duration);
-                showNotification(song);
+                currentSong = song;
+                showNotification(currentSong);
                 mediaPlayer.start();
                 currentSongIndex = songs.indexOf(song);
                 EventBus.getDefault().post(new MusicPlaybackStartedEvent(currentSong));
                 mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                     @Override
                     public void onCompletion(MediaPlayer mp) {
-                        // Playback completed, play the next song
-
+                        EventBus.getDefault().post(new CloseLyricsEvent());
                         if (loopStatus == 0 && currentSongIndex == songs.size() - 1) {
                             EventBus.getDefault().post(new MusicPlaybackStoppedEvent());
                         } else {
@@ -229,6 +232,13 @@ public class MusicService extends Service {
                     public void run() {
                         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                             int currentPosition = mediaPlayer.getCurrentPosition();
+//                            int remainingTime = song.getDuration() - currentPosition;
+//
+//                            if (remainingTime <= 1000 && remainingTime >= 0) {
+//                                EventBus.getDefault().post(new CloseLyricsEvent());
+//                                Log.i("TAG", "runaa: " + remainingTime + " " + currentPosition + " " + song.getDuration());
+//                            }
+
                             EventBus.getDefault().post(new UpdatePlaybackPositionEvent(song,true, currentPosition));
                             handler.postDelayed(this, 1000); // Update every 1 second
                         }

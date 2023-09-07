@@ -29,6 +29,7 @@ import androidx.palette.graphics.Palette;
 
 import com.bumptech.glide.Glide;
 import com.example.spotipeng.R;
+import com.example.spotipeng.events.CloseLyricsEvent;
 import com.example.spotipeng.events.MusicPlaybackLoopEvent;
 import com.example.spotipeng.events.MusicPlaybackPausedEvent;
 import com.example.spotipeng.events.MusicPlaybackResumedEvent;
@@ -37,6 +38,7 @@ import com.example.spotipeng.events.MusicPlaybackStartedEvent;
 import com.example.spotipeng.events.MusicPlaybackStoppedEvent;
 import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
 import com.example.spotipeng.events.UpdatePlaybackSeekbarPositionEvent;
+import com.example.spotipeng.fragment.LyricsFragment;
 import com.example.spotipeng.model.Song;
 import com.example.spotipeng.service.MusicService;
 import com.squareup.picasso.Picasso;
@@ -69,7 +71,6 @@ public class SongDetailActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EventBus.getDefault().register(this);
         setContentView(R.layout.song_detail);
 
         // Initialize views
@@ -90,9 +91,11 @@ public class SongDetailActivity extends AppCompatActivity {
         loopStatus = preferences.getInt("loopStatus", 0); // Default value 0 (or any default you prefer)
         if (shuffleStatus == 1){
             shuffleButton.setImageResource(R.drawable.ic_shuffle_on);
+            EventBus.getDefault().post(new MusicPlaybackShuffleEvent(shuffleStatus));
         }
         if (loopStatus == 1){
             loopButton.setImageResource(R.drawable.ic_loop_on);
+            EventBus.getDefault().post(new MusicPlaybackLoopEvent(loopStatus));
         }
         // Set click listeners for control buttons
         loopButton.setOnClickListener(v -> {
@@ -217,12 +220,21 @@ public class SongDetailActivity extends AppCompatActivity {
                 layout.setBackground(transitionDrawable);
             });
             changeStatusBarColor(prominentColor);
+            showFragment(prominentColor, song);
             // Start the animation
             animator.start();
 
             // Update the current background color
             currentBackgroundColor = prominentColor;
         });
+    }
+
+    private void showFragment(int color, Song song) {
+        LyricsFragment lyricsFragment = LyricsFragment.newInstance(song, color);
+        getSupportFragmentManager().beginTransaction()
+                .add(R.id.lyricsContainer, lyricsFragment) // Replace R.id.lyricsContainer with the actual ID
+                .commit();
+
     }
 
     // Helper method to blend two colors based on a fraction
@@ -352,6 +364,15 @@ public class SongDetailActivity extends AppCompatActivity {
         rightDurationTextView.setText(formatDuration(rightduration));
     }
 
+    @Subscribe
+    public void onClosedLyricsEvent(CloseLyricsEvent event){
+        Intent serviceIntent = new Intent(this, MusicService.class);
+        serviceIntent.setAction("STOP");
+        this.startService(serviceIntent);
+        serviceIntent.setAction("PLAY");
+        this.startService(serviceIntent);
+    }
+
     @Override
     public void onBackPressed() {
         super.onBackPressed();
@@ -359,5 +380,15 @@ public class SongDetailActivity extends AppCompatActivity {
         overridePendingTransition(0, R.anim.slide_out);
     }
 
+    @Override
+    protected void onStart() {
+        EventBus.getDefault().register(this);
+        super.onStart();
+    }
 
+    @Override
+    protected void onStop() {
+        EventBus.getDefault().unregister(this);
+        super.onStop();
+    }
 }

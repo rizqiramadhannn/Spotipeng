@@ -22,29 +22,30 @@ public class SplashScreenActivity extends AppCompatActivity {
         logoImageView = findViewById(R.id.logoImageView);
 
         // Fade-in animation for the logo
-        ObjectAnimator fadeIn = ObjectAnimator.ofFloat(logoImageView, "alpha", 0f, 1f);
-        fadeIn.setDuration(1000); // Duration of the animation in milliseconds
-        fadeIn.start();
 
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                // Check if the user is already logged in
-                SharedPreferences sharedPreferences = getSharedPreferences("spotipeng", MODE_PRIVATE);
-                String token = sharedPreferences.getString("token", null);
 
-                if (token != null && !token.isEmpty()) {
-                    // User is logged in, navigate to the main activity
-                    Intent intent = new Intent(SplashScreenActivity.this, MainActivity.class);
-                    startActivity(intent);
-                } else {
-                    // User is not logged in, navigate to the login activity
+        // Check if the user is already logged in
+        SharedPreferences sharedPreferences = getSharedPreferences("spotipeng", MODE_PRIVATE);
+        String token = sharedPreferences.getString("token", null);
+
+        if (token != null && !token.isEmpty()) {
+            // User is logged in, navigate to the main activity and finish the splash screen
+            Intent intent = new Intent(SplashScreenActivity.this, MainActivity.class);
+            startActivity(intent);
+            finish();
+        } else {
+            ObjectAnimator fadeIn = ObjectAnimator.ofFloat(logoImageView, "alpha", 0f, 1f);
+            fadeIn.setDuration(1000); // Duration of the animation in milliseconds
+            fadeIn.start();
+            // User is not logged in, delay for 3 seconds before navigating to the login activity
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
                     Intent intent = new Intent(SplashScreenActivity.this, LoginActivity.class);
                     startActivity(intent);
+                    finish();
                 }
-
-                finish();
-            }
-        }, 3000); // Delay for 3 seconds before navigating
+            }, 3000); // Delay for 3 seconds before navigating
+        } // Delay for 3 seconds before navigating
     }
 }

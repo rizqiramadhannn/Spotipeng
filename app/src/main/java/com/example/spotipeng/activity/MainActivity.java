@@ -267,8 +267,9 @@ public class MainActivity extends AppCompatActivity {
                         String title = songObject.get("title").getAsString();
                         String url = Constants.Song_URL + songObject.get("url").getAsString();
                         String album = songObject.get("album").getAsString();
+                        String lyrics = Constants.Song_URL + songObject.get("lyrics").getAsString();
 
-                        Song currentSong = new Song(singer, title, url, album);
+                        Song currentSong = new Song(singer, title, url, album, lyrics);
                         songs.add(currentSong);
                     }
 
