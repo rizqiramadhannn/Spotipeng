@@ -5,11 +5,14 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,6 +25,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -31,10 +35,8 @@ import com.example.spotipeng.api.AuthInterceptor;
 import com.example.spotipeng.api.JsonPlaceHolderApi;
 import com.example.spotipeng.events.GetCurrentSongEvent;
 import com.example.spotipeng.events.GetSongListEvent;
-import com.example.spotipeng.events.MusicPlaybackStartedEvent;
 import com.example.spotipeng.events.MusicPlaybackStoppedEvent;
 import com.example.spotipeng.events.StartFragmentEvent;
-import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
 import com.example.spotipeng.fragment.MiniPlayerFragment;
 import com.example.spotipeng.model.Song;
 import com.example.spotipeng.model.User;
@@ -47,8 +49,6 @@ import com.google.gson.JsonObject;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -87,10 +87,14 @@ public class MainActivity extends AppCompatActivity {
     private static final int SORT_BY_ARTIST = 2;
     private static final int ASC = 1;
     private static final int DESC = 2;
+    private static final int LIST = 1;
+    private static final int GRID = 2;
 
     // Define a variable to keep track of the current sorting option
     private int currentSortOption = SORT_BY_TITLE;
     private int currentAlphabetOption = ASC;
+    private int currentViewOption = LIST;
+    private int spanCount = 2;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -110,6 +114,11 @@ public class MainActivity extends AppCompatActivity {
         fetchSongs();
         fetchUser();
         setContentView(R.layout.activity_main);
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int screenWidth = displayMetrics.widthPixels;
+        spanCount = screenWidth / 200;
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -188,6 +197,43 @@ public class MainActivity extends AppCompatActivity {
             }
             return true; // Return true to indicate that the item click has been handled
         });
+        ImageButton listViewButton = findViewById(R.id.listViewButton);
+        ImageButton gridViewButton = findViewById(R.id.gridViewButton);
+        currentViewOption = sharedPreferences.getInt("viewmode", LIST);
+        if (currentViewOption == GRID){
+            listViewButton.setImageResource(R.drawable.ic_listview);
+            gridViewButton.setImageResource(R.drawable.ic_grid_on);
+        }
+        listViewButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (currentViewOption == GRID){
+                    currentViewOption = LIST;
+                    getViewMode();
+                    listViewButton.setImageResource(R.drawable.ic_listview_on);
+                    gridViewButton.setImageResource(R.drawable.ic_grid);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putInt("viewmode", LIST);
+                    editor.apply();
+                }
+            }
+        });
+
+
+        gridViewButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (currentViewOption == LIST){
+                    currentViewOption = GRID;
+                    getViewMode();
+                    listViewButton.setImageResource(R.drawable.ic_listview);
+                    gridViewButton.setImageResource(R.drawable.ic_grid_on);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putInt("viewmode", GRID);
+                    editor.apply();
+                }
+            }
+        });
 
         sortButton.setOnClickListener(v -> popupMenu.show());
         sortAlphabetButton.setOnClickListener(v -> popupAlphabetMenu.show());
@@ -226,7 +272,7 @@ public class MainActivity extends AppCompatActivity {
                         songs.add(currentSong);
                     }
 
-                    showSongs();
+                    showSongs(currentViewOption);
                     EventBus.getDefault().post(new GetSongListEvent(allSongs));
                 }
             }
@@ -266,27 +312,16 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void showSongs() {
+    public void showSongs(int currentViewOption) {
         if (songs.size() == 0){
             Toast.makeText(this, "No Songs", Toast.LENGTH_SHORT).show();
             return;
         }
-
         allSongs.clear();
         allSongs.addAll(songs);
         String title = getResources().getString(R.string.app_name);
         Objects.requireNonNull(getSupportActionBar()).setTitle(title);
-
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(layoutManager);
-        songAdapter = new SongAdapter(this, allSongs);
-        recyclerView.setAdapter(songAdapter);
-
-        ScaleInAnimationAdapter scaleInAnimationAdapter = new ScaleInAnimationAdapter(songAdapter);
-        scaleInAnimationAdapter.setDuration(1000);
-        scaleInAnimationAdapter.setInterpolator(new OvershootInterpolator());
-        scaleInAnimationAdapter.setFirstOnly(false);
-        recyclerView.setAdapter(scaleInAnimationAdapter);
+        getViewMode();
         onSortOptionSelected(currentSortOption, currentAlphabetOption);
         EventBus.getDefault().post(new GetSongListEvent(allSongs));
     }
@@ -410,6 +445,23 @@ public class MainActivity extends AppCompatActivity {
         currentAlphabetOption = alphabetOption;
         sortSongs();
         songAdapter.notifyDataSetChanged(); // Notify the adapter that the data has changed
+    }
+
+    private void getViewMode() {
+        if (currentViewOption == LIST){
+            LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+            recyclerView.setLayoutManager(layoutManager);
+        } else {
+            GridLayoutManager layoutManager = new GridLayoutManager(this, spanCount);
+            recyclerView.setLayoutManager(layoutManager);
+        }
+        songAdapter = new SongAdapter(this, allSongs, currentViewOption);
+        recyclerView.setAdapter(songAdapter);
+        ScaleInAnimationAdapter scaleInAnimationAdapter = new ScaleInAnimationAdapter(songAdapter);
+        scaleInAnimationAdapter.setDuration(1000);
+        scaleInAnimationAdapter.setInterpolator(new OvershootInterpolator());
+        scaleInAnimationAdapter.setFirstOnly(false);
+        recyclerView.setAdapter(scaleInAnimationAdapter);
     }
 
     private void logout() {

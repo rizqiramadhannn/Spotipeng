@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:elevation="10dp">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardGrid"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/sm"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:cardElevation="8dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/primary_color_variant"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/artworkView"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_weight="1"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_default_artwork"
+                android:contentDescription="@string/app_name"
+                app:layout_constraintDimensionRatio="1:1" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:paddingHorizontal="@dimen/sm"
+                android:paddingVertical="4dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_gravity="start">
+
+                <TextView
+                    android:id="@+id/titleView"
+                    android:textSize="14sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Very Long Title That Should Be Truncated"
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:textColor="@color/white"
+                    android:background="@android:color/transparent" />
+
+                <TextView
+                    android:id="@+id/artistView"
+                    android:gravity="start"
+                    android:textSize="12sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Very Long Artist Name That Should Be Truncated"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:textColor="@color/white"
+                    android:background="@android:color/transparent" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
