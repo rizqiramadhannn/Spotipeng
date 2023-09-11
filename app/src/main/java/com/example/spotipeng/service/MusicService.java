@@ -20,6 +20,7 @@ import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.motion.utils.StopLogic;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -28,9 +29,12 @@ import com.example.spotipeng.R;
 import com.example.spotipeng.activity.SongDetailActivity;
 import com.example.spotipeng.api.JsonPlaceHolderApi;
 import com.example.spotipeng.events.GetSongListEvent;
+import com.example.spotipeng.events.CloseLyricsEvent;
+import com.example.spotipeng.events.MiniplayerFragmentRestarted;
 import com.example.spotipeng.events.MusicPlaybackLoopEvent;
 import com.example.spotipeng.events.MusicPlaybackPausedEvent;
 import com.example.spotipeng.events.MusicPlaybackResumedEvent;
+import com.example.spotipeng.events.MusicPlaybackShuffleEvent;
 import com.example.spotipeng.events.MusicPlaybackStartedEvent;
 import com.example.spotipeng.events.MusicPlaybackStoppedEvent;
 import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
@@ -43,6 +47,7 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -59,6 +64,7 @@ public class MusicService extends Service {
     private Song currentSong;
     private boolean isPlaying = false;
     private int loopStatus = 0;
+    private int shuffleStatus = 0;
     List<Song> songs = new ArrayList<>();
     private int currentSongIndex = -1;
     private Handler handler = new Handler();
@@ -90,7 +96,10 @@ public class MusicService extends Service {
 
     @Subscribe
     public void onGetSongList(GetSongListEvent event) {
-        songs = event.getSongs();
+        songs.clear(); // Clear the existing songs
+        songs.addAll(event.getSongs()); // Update with new songs
+        currentSongIndex = songs.indexOf(currentSong);
+
     }
 
     @Override
@@ -142,6 +151,11 @@ public class MusicService extends Service {
     }
 
     @Subscribe
+    public void onMusicPlaybackShuffle(MusicPlaybackShuffleEvent event) {
+        shuffleStatus = event.getStatus();
+    }
+
+    @Subscribe
     public void onMusicPlaybackResumedEvent(MusicPlaybackResumedEvent event) {
         showNotification(currentSong);
     }
@@ -153,13 +167,20 @@ public class MusicService extends Service {
 
     private void playNextSong() {
         if (songs.isEmpty()) {
+            Log.i("TAG", "playNextSong: " + "empty");
             return; // No songs in the playlist
         }
-        if (currentSongIndex == songs.size() - 1 && loopStatus == 0) {
+        if (currentSongIndex == songs.size() - 1 && loopStatus == 0 && shuffleStatus != 1) {
             Toast.makeText(this, "This is the end of Playlist", Toast.LENGTH_SHORT).show();
             return;
         }
-        currentSongIndex = (currentSongIndex + 1) % songs.size(); // Get the index of the next song
+        if (shuffleStatus == 1){
+            int randomIndex = new Random().nextInt(songs.size());
+            currentSongIndex = randomIndex;
+        } else {
+            currentSongIndex = (currentSongIndex + 1) % songs.size();
+        }
+         // Get the index of the next song
         EventBus.getDefault().post(new MusicPlaybackStartedEvent(songs.get(currentSongIndex)));
         playSong(songs.get(currentSongIndex)); // Play the next song
     }
@@ -171,8 +192,15 @@ public class MusicService extends Service {
         if (currentSongIndex == 0 && loopStatus == 0) {
             Toast.makeText(this, "This is the beginning of Playlist", Toast.LENGTH_SHORT).show();
             return;
+        } else if (loopStatus == 1) {
+            currentSongIndex = songs.size();
         }
-        currentSongIndex = (currentSongIndex - 1 + songs.size()) % songs.size(); // Get the index of the previous song
+        if (shuffleStatus == 1){
+            int randomIndex = new Random().nextInt(songs.size());
+            currentSongIndex = randomIndex;
+        } else {
+            currentSongIndex = (currentSongIndex - 1) % songs.size();
+        } // Get the index of the previous song
         EventBus.getDefault().post(new MusicPlaybackStartedEvent(songs.get(currentSongIndex)));
         playSong(songs.get(currentSongIndex)); // Play the previous song
     }
@@ -187,15 +215,16 @@ public class MusicService extends Service {
                 mediaPlayer.prepare();
                 int duration = mediaPlayer.getDuration();
                 song.setDuration(duration);
-                showNotification(song);
+                currentSong = song;
+                stopForeground(true);
+                showNotification(currentSong);
                 mediaPlayer.start();
                 currentSongIndex = songs.indexOf(song);
                 EventBus.getDefault().post(new MusicPlaybackStartedEvent(currentSong));
                 mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                     @Override
                     public void onCompletion(MediaPlayer mp) {
-                        // Playback completed, play the next song
-
+                        EventBus.getDefault().post(new CloseLyricsEvent());
                         if (loopStatus == 0 && currentSongIndex == songs.size() - 1) {
                             EventBus.getDefault().post(new MusicPlaybackStoppedEvent());
                         } else {
@@ -209,6 +238,13 @@ public class MusicService extends Service {
                     public void run() {
                         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                             int currentPosition = mediaPlayer.getCurrentPosition();
+//                            int remainingTime = song.getDuration() - currentPosition;
+//
+//                            if (remainingTime <= 1000 && remainingTime >= 0) {
+//                                EventBus.getDefault().post(new CloseLyricsEvent());
+//                                Log.i("TAG", "runaa: " + remainingTime + " " + currentPosition + " " + song.getDuration());
+//                            }
+
                             EventBus.getDefault().post(new UpdatePlaybackPositionEvent(song,true, currentPosition));
                             handler.postDelayed(this, 1000); // Update every 1 second
                         }
@@ -245,11 +281,9 @@ public class MusicService extends Service {
     }
 
     private void stop() {
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-            mediaPlayer.stop();
-            isPlaying = false;
-            stopForeground(true);
-        }
+        mediaPlayer.stop();
+        isPlaying = false;
+        stopForeground(true);
     }
 
     private void showNotification(Song song) {
@@ -295,8 +329,8 @@ public class MusicService extends Service {
             public void run() {
                 if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                     int currentPosition = mediaPlayer.getCurrentPosition();
-                    int playbackProgress = calculatePlaybackProgress(currentPosition);
-                    remoteViews.setProgressBar(R.id.notification_progress_bar, song.getDuration(), playbackProgress, false);
+
+                    remoteViews.setProgressBar(R.id.notification_progress_bar, song.getDuration(), currentPosition, false);
 
                     // Update elapsed time and remaining time TextViews
                     remoteViews.setTextViewText(R.id.notification_elapsed_time, formatDuration(currentPosition));
@@ -305,13 +339,7 @@ public class MusicService extends Service {
                     // Update the notification
                     NotificationManagerCompat notificationManager = NotificationManagerCompat.from(MusicService.this);
                     if (ActivityCompat.checkSelfPermission(MusicService.this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                        // TODO: Consider calling
-                        //    ActivityCompat#requestPermissions
-                        // here to request the missing permissions, and then overriding
-                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                        //                                          int[] grantResults)
-                        // to handle the case where the user grants the permission. See the documentation
-                        // for ActivityCompat#requestPermissions for more details.
+                        // Handle permission checks
                         return;
                     }
                     notificationManager.notify(NOTIFICATION_ID, notification);
@@ -320,31 +348,10 @@ public class MusicService extends Service {
                     handler.postDelayed(this, 1000); // Update every 1 second
                 }
             }
+
         });
-        // Create a notification with custom views
-
-
-        // Start the service in the foreground with the custom notification
         startForeground(NOTIFICATION_ID, notification);
-
-        // Set up the handler for updating progress and time TextViews
-        // Start the progress bar update every 1 second
     }
-
-    private int calculatePlaybackProgress(int currentPosition) {
-        if (mediaPlayer != null) {
-            int totalDuration = mediaPlayer.getDuration();
-
-            // Calculate the playback progress in percentage
-            double progressPercentage = (currentPosition * 100.0) / totalDuration;
-
-            // Ensure the progress is within the valid range (0 to 100)
-            return (int) Math.min(100, Math.max(0, progressPercentage));
-        }
-
-        return 0; // Return 0 if mediaPlayer is not available
-    }
-
 
     @Override
     public void onDestroy() {

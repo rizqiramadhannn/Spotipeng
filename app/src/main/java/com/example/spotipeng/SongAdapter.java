@@ -4,8 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
-import android.net.Uri;
-import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +17,7 @@ import com.example.spotipeng.events.MusicPlaybackStartedEvent;
 import com.example.spotipeng.events.StartFragmentEvent;
 import com.example.spotipeng.model.Song;
 import com.example.spotipeng.service.MusicService;
+import com.squareup.picasso.Picasso;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -31,20 +30,32 @@ public class SongAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     MediaPlayer mediaPlayer;
     private MusicPlaybackListener musicPlaybackListener;
 
+    private static final int LIST = 1;
+    private static final int GRID = 2;
 
-    public SongAdapter(Context context, List<Song> songs) {
+    private int viewMode;
+
+    public SongAdapter(Context context, List<Song> songs, int viewMode) {
         this.context = context;
         this.songs = songs;
         this.mediaPlayer = new MediaPlayer();
         this.musicPlaybackListener = musicPlaybackListener;
+        this.viewMode = viewMode;
+    }
+
+    public void setViewMode(int viewMode) {
+        this.viewMode = viewMode;
+        notifyDataSetChanged();
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.song_row_item, parent, false);
+        int layoutResId = (viewMode == LIST) ? R.layout.song_row_item : R.layout.song_grid_item;
+        View view = LayoutInflater.from(parent.getContext()).inflate(layoutResId, parent, false);
         return new SongViewHolder(view);
     }
+
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
@@ -54,14 +65,14 @@ public class SongAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         viewHolder.titleHolder.setText(song.getTitle());
         viewHolder.artistHolder.setText(song.getSinger());
 
-        Uri artworkUri = Uri.parse(song.getAlbum());
+        String artworkUri = song.getAlbum();
         if (artworkUri != null){
-            viewHolder.artworkHolder.setImageURI(artworkUri);
-
+            Picasso.get().load(artworkUri).into(viewHolder.artworkHolder);
             if (viewHolder.artworkHolder.getDrawable() == null){
                 viewHolder.artworkHolder.setImageResource(R.drawable.ic_default_artwork);
             }
         }
+
         viewHolder.itemView.setOnClickListener(view -> {
             EventBus.getDefault().post(new StartFragmentEvent());
             EventBus.getDefault().post(new MusicPlaybackStartedEvent(song));
@@ -70,6 +81,7 @@ public class SongAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             context.startService(serviceIntent);
         });
     }
+
 
     public interface MusicPlaybackListener {
         void onMusicPlaybackStarted(Song song);

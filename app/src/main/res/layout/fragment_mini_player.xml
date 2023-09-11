@@ -1,8 +1,11 @@
 <androidx.constraintlayout.widget.ConstraintLayout
+    android:id="@+id/fragmentlayout"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_marginBottom="12dp"
+    android:visibility="gone"
     android:elevation="10dp">
 
     <com.google.android.material.card.MaterialCardView
@@ -12,23 +15,31 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginBottom="@dimen/md"
+        android:layout_marginBottom="@dimen/lg"
         app:cardElevation="8dp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="@dimen/sm"
-            android:paddingTop="@dimen/sm"
             android:background="@color/primary_color_variant">
 
+            <ImageView
+                android:id="@+id/artworkView"
+                android:layout_width="@dimen/x_lg"
+                android:layout_height="@dimen/x_lg"
+                android:padding="@dimen/sm"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:src="@drawable/ic_default_artwork" />
+
             <TextView
+                android:layout_marginTop="12dp"
                 android:id="@+id/titleView"
-                android:layout_marginLeft="@dimen/md"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                app:layout_constraintStart_toEndOf="@+id/artworkView"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/playPauseButton"
                 android:text="Title"
                 android:textColor="@color/white"
@@ -38,12 +49,10 @@
 
             <TextView
                 android:id="@+id/artistView"
-                android:layout_marginLeft="@dimen/md"
                 android:layout_width="0dp"
-                android:layout_marginTop="8dp"
                 android:layout_height="wrap_content"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/artworkView"
+                app:layout_constraintTop_toBottomOf="@+id/titleView"
                 app:layout_constraintEnd_toStartOf="@+id/playPauseButton"
                 android:text="Artist"
                 android:textColor="@color/white"
@@ -65,6 +74,7 @@
                 android:padding="@dimen/sm" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
+
 
     </com.google.android.material.card.MaterialCardView>
 
