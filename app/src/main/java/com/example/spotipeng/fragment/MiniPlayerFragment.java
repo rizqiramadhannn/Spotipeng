@@ -2,7 +2,9 @@ package com.example.spotipeng.fragment;
 
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
@@ -29,6 +31,7 @@ import androidx.fragment.app.Fragment;
 import androidx.palette.graphics.Palette;
 
 import com.example.spotipeng.events.GetCurrentSongEvent;
+import com.example.spotipeng.events.MiniplayerFragmentRestarted;
 import com.example.spotipeng.events.UpdatePlaybackPositionEvent;
 import com.example.spotipeng.service.MusicService;
 import com.example.spotipeng.R;
@@ -52,7 +55,13 @@ public class MiniPlayerFragment extends Fragment {
     private ImageButton playPauseButton;
     private boolean isPlaying = false;
     private Song currentSong;
+    private String title;
+    private String artist;
+    private String album;
     private ConstraintLayout layout;
+    private ConstraintLayout fragmentlayout;
+    private SharedPreferences preferences;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -75,7 +84,15 @@ public class MiniPlayerFragment extends Fragment {
         playPauseButton = rootView.findViewById(R.id.playPauseButton);
         artworkView = rootView.findViewById(R.id.artworkView);
         layout = rootView.findViewById(R.id.layout);
-
+        fragmentlayout = rootView.findViewById(R.id.fragmentlayout);
+        preferences = getActivity().getSharedPreferences("spotipeng", Context.MODE_PRIVATE);
+        isPlaying = preferences.getBoolean("isplaying", false);
+        title = preferences.getString("fragmenttitle", "Title");
+        artist = preferences.getString("fragmentartist", "Artist");
+        album = preferences.getString("fragmentalbum", "");
+        if (isPlaying){
+            fragmentlayout.setVisibility(View.VISIBLE);
+        }
         // Set click listener for the play/pause button
         playPauseButton.setOnClickListener(v -> {
             Intent serviceIntent = new Intent(getContext(), MusicService.class);
@@ -87,6 +104,11 @@ public class MiniPlayerFragment extends Fragment {
             }
             getContext().startService(serviceIntent);
         });
+        if (title != "Title"){
+            updateSongTitle(title);
+            updateArtist(artist);
+            displayAlbum(album);
+        }
         // Apply fade-in animation to the root view of the fragment
         Animation fadeInAnimation = AnimationUtils.loadAnimation(requireContext(), R.anim.fade_in);
         rootView.startAnimation(fadeInAnimation);
@@ -102,12 +124,18 @@ public class MiniPlayerFragment extends Fragment {
     @Subscribe
     public void onMusicPlaybackPaused(MusicPlaybackPausedEvent event){
         isPlaying = event.getStatus();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("isplaying", isPlaying);
+        editor.apply();
         updatePlayPauseButton(isPlaying);
     }
 
     @Subscribe
     public void onMusicPlaybackResumed(MusicPlaybackResumedEvent event){
         isPlaying = event.getStatus();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("isplaying", isPlaying);
+        editor.apply();
         updatePlayPauseButton(isPlaying);
     }
 
@@ -121,24 +149,31 @@ public class MiniPlayerFragment extends Fragment {
         }
         Song song = event.getSong();
         currentSong = song;
-
+        fragmentlayout.setVisibility(View.VISIBLE);
         updateSongTitle(song.getTitle());
         updateArtist(song.getSinger());
         isPlaying = event.getStatus();
-        displayAlbum(song);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("isplaying", isPlaying);
+        editor.putString("fragmenttitle", song.getTitle());
+        editor.putString("fragmentartist", song.getSinger());
+        editor.putString("fragmentalbum", song.getAlbum());
+        editor.apply();
+        displayAlbum(song.getAlbum());
         updatePlayPauseButton(isPlaying);
         // Other logic
     }
 
-//    @Subscribe
-//    public void onUpdatePlaybackPosition(UpdatePlaybackPositionEvent event) {
-//        // Handle the event here
-//        Song song = event.getSong();
-//        updateSongTitle(song.getTitle());
-//        updateArtist(song.getSinger());
-//        currentSong = song;
-//        // Other logic
-//    }
+    @Subscribe
+    public void onMiniplayerFragmentRestarted(MiniplayerFragmentRestarted event) {
+        // Handle the event here
+        Song song = currentSong;
+        updateSongTitle(song.getTitle());
+        updateArtist(song.getSinger());
+        displayAlbum(song.getAlbum());
+        currentSong = song;
+        // Other logic
+    }
 
     @Subscribe
     public void onMusicPlaybackStopped(MusicPlaybackStoppedEvent event) {
@@ -172,8 +207,10 @@ public class MiniPlayerFragment extends Fragment {
         playPauseButton.invalidate();
     }
 
-    private void displayAlbum(Song song) {
-        String albumUrl = song.getAlbum();
+    private void displayAlbum(String albumUrl) {
+        if (albumUrl == ""){
+            return;
+        }
 
         // Load the image with Picasso and use a Callback
         Picasso.get().load(albumUrl).into(artworkView, new Callback() {

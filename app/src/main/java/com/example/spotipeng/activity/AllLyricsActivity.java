@@ -237,7 +237,8 @@ public class AllLyricsActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
+        Intent loginIntent = new Intent(this, MainActivity.class);
+        startActivity(loginIntent);
         overridePendingTransition(0, R.anim.slide_out);
     }
 

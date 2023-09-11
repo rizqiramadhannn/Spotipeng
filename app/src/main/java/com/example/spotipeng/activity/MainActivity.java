@@ -1,5 +1,6 @@
 package com.example.spotipeng.activity;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -35,6 +36,7 @@ import com.example.spotipeng.api.AuthInterceptor;
 import com.example.spotipeng.api.JsonPlaceHolderApi;
 import com.example.spotipeng.events.GetCurrentSongEvent;
 import com.example.spotipeng.events.GetSongListEvent;
+import com.example.spotipeng.events.MiniplayerFragmentRestarted;
 import com.example.spotipeng.events.MusicPlaybackStoppedEvent;
 import com.example.spotipeng.events.StartFragmentEvent;
 import com.example.spotipeng.fragment.MiniPlayerFragment;
@@ -98,8 +100,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EventBus.getDefault().register(this);
-        SharedPreferences sharedPreferences = getSharedPreferences("spotipeng", Context.MODE_PRIVATE);;
+        SharedPreferences sharedPreferences = getSharedPreferences("spotipeng", Context.MODE_PRIVATE);
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .addInterceptor(new AuthInterceptor(sharedPreferences)) // Pass your SharedPreferences here
                 .build();
@@ -111,6 +112,10 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         jsonPlaceHolderApi = retrofit.create(JsonPlaceHolderApi.class);
+        Intent serviceIntent = new Intent(this, MusicService.class);
+        startService(serviceIntent);
+        showMiniPlayerFragment();
+
         fetchSongs();
         fetchUser();
         setContentView(R.layout.activity_main);
@@ -241,8 +246,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerview);
         FragmentManager fragmentManager = getSupportFragmentManager();
         miniPlayerFragment = (MiniPlayerFragment) fragmentManager.findFragmentById(R.id.miniPlayerContainer);
-        Intent serviceIntent = new Intent(this, MusicService.class);
-        this.startService(serviceIntent);
+
     }
 
     private void fetchSongs() {
@@ -274,7 +278,6 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     showSongs(currentViewOption);
-                    EventBus.getDefault().post(new GetSongListEvent(allSongs));
                 }
             }
 
@@ -325,6 +328,7 @@ public class MainActivity extends AppCompatActivity {
         getViewMode();
         onSortOptionSelected(currentSortOption, currentAlphabetOption);
         EventBus.getDefault().post(new GetSongListEvent(allSongs));
+
     }
 
     @Override
@@ -439,7 +443,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
     // Function to handle sorting option selection
     private void onSortOptionSelected(int sortOption, int alphabetOption) {
         currentSortOption = sortOption;
@@ -465,16 +468,41 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(scaleInAnimationAdapter);
     }
 
+    private boolean isMusicServiceRunning() {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (MusicService.class.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
     private void logout() {
         SharedPreferences sharedPreferences = getSharedPreferences("spotipeng", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.clear();
         editor.apply();
         EventBus.getDefault().post(new MusicPlaybackStoppedEvent());
+        Intent serviceIntent = new Intent(this, MusicService.class);
+        stopService(serviceIntent);
         // Redirect to the login activity or perform other necessary actions
         Intent loginIntent = new Intent(this, LoginActivity.class);
         startActivity(loginIntent);
         finish(); // Close the current activity
+    }
+
+    @Override
+    protected void onStart() {
+        EventBus.getDefault().register(this);
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        EventBus.getDefault().unregister(this);
+        super.onStop();
     }
 
     @Override

@@ -67,7 +67,12 @@ public class LyricsFragment extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_lyrics, container, false);
         lyricsTextView = view.findViewById(R.id.lyricsTextView);
-        downloadLyrics(song.getLyrics());
+        if (song.getLyrics().length() < 150){
+            downloadLyrics(song.getLyrics());
+        } else {
+            lyricsTextView.setText(song.getLyrics());
+        }
+
 
         // Get the background color of the CardView
         TypedValue typedValue = new TypedValue();

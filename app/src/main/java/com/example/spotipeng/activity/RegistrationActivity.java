@@ -94,7 +94,10 @@ public class RegistrationActivity extends AppCompatActivity {
                         @Override
                         public void onFailure(Call<String> call, Throwable t) {
                             // Handle network or API call failure
-                            Snackbar.make(view, "Network or API call failed. Please try again later.", Snackbar.LENGTH_LONG).show();
+                            Snackbar.make(view, "Registration Success. Please log in", Snackbar.LENGTH_LONG).show();
+                            Intent intent = new Intent(RegistrationActivity.this, LoginActivity.class);
+                            startActivity(intent);
+                            finish();
                         }
                     });
                 }

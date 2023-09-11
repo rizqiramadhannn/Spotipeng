@@ -20,6 +20,7 @@ import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.motion.utils.StopLogic;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -29,6 +30,7 @@ import com.example.spotipeng.activity.SongDetailActivity;
 import com.example.spotipeng.api.JsonPlaceHolderApi;
 import com.example.spotipeng.events.GetSongListEvent;
 import com.example.spotipeng.events.CloseLyricsEvent;
+import com.example.spotipeng.events.MiniplayerFragmentRestarted;
 import com.example.spotipeng.events.MusicPlaybackLoopEvent;
 import com.example.spotipeng.events.MusicPlaybackPausedEvent;
 import com.example.spotipeng.events.MusicPlaybackResumedEvent;
@@ -94,8 +96,10 @@ public class MusicService extends Service {
 
     @Subscribe
     public void onGetSongList(GetSongListEvent event) {
-        songs = event.getSongs();
+        songs.clear(); // Clear the existing songs
+        songs.addAll(event.getSongs()); // Update with new songs
         currentSongIndex = songs.indexOf(currentSong);
+
     }
 
     @Override
@@ -163,6 +167,7 @@ public class MusicService extends Service {
 
     private void playNextSong() {
         if (songs.isEmpty()) {
+            Log.i("TAG", "playNextSong: " + "empty");
             return; // No songs in the playlist
         }
         if (currentSongIndex == songs.size() - 1 && loopStatus == 0 && shuffleStatus != 1) {
@@ -211,6 +216,7 @@ public class MusicService extends Service {
                 int duration = mediaPlayer.getDuration();
                 song.setDuration(duration);
                 currentSong = song;
+                stopForeground(true);
                 showNotification(currentSong);
                 mediaPlayer.start();
                 currentSongIndex = songs.indexOf(song);
@@ -275,11 +281,9 @@ public class MusicService extends Service {
     }
 
     private void stop() {
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-            mediaPlayer.stop();
-            isPlaying = false;
-            stopForeground(true);
-        }
+        mediaPlayer.stop();
+        isPlaying = false;
+        stopForeground(true);
     }
 
     private void showNotification(Song song) {
@@ -346,16 +350,8 @@ public class MusicService extends Service {
             }
 
         });
-        // Create a notification with custom views
-
-
-        // Start the service in the foreground with the custom notification
         startForeground(NOTIFICATION_ID, notification);
-
-        // Set up the handler for updating progress and time TextViews
-        // Start the progress bar update every 1 second
     }
-
 
     @Override
     public void onDestroy() {
