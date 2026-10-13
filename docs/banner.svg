@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">Spotipeng</title>
+  <desc id="desc">Music, in your pocket. Java / Android / Retrofit / MediaPlayer</desc>
+  <defs>
+    <linearGradient id="bg"><stop stop-color="#101820"/><stop offset="1" stop-color="#17352e"/></linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#82e3bd" stroke-opacity=".06"/></pattern>
+  </defs>
+  <rect width="1200" height="300" rx="18" fill="url(#bg)"/>
+  <rect width="1200" height="300" rx="18" fill="url(#grid)"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <circle cx="55" cy="48" r="4" fill="#82e3bd"/>
+    <text x="72" y="53" fill="#82e3bd" font-size="13" font-weight="600" letter-spacing="2.2">ANDROID / MUSIC PLAYER</text>
+    <text x="50" y="130" fill="#f1f7fa" font-size="54" font-weight="700" letter-spacing="-1.5">Spotipeng</text>
+    <text x="52" y="174" fill="#bbccd5" font-size="24">Music, in your pocket.</text>
+    <path d="M52 207H738" stroke="#82e3bd" stroke-opacity=".22"/>
+    <text x="52" y="246" fill="#82e3bd" font-size="14" letter-spacing="1">Java / Android / Retrofit / MediaPlayer</text>
+  </g>
+  <g transform="translate(1008 150)">
+    <circle r="112" fill="#82e3bd" fill-opacity=".035" stroke="#82e3bd" stroke-opacity=".12"/>
+    <g fill="none" stroke="#82e3bd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><g stroke-width="9"><path d="M-95-18V18M-70-41V41M-45-65V65M-20-29V29M5-49V49M30-70V70M55-37V37M80-15V15"/></g></g>
+  </g>
+</svg>
